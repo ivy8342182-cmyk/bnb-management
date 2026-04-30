@@ -384,7 +384,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="fg"><label>房間名稱</label><input id="rn-name" placeholder="例：幸福套房"></div>
     <div class="g2"><div class="fg"><label>房間編號</label><input id="rn-num" placeholder="例：101"></div>
     <div class="fg"><label>每晚定價（元）</label><input type="number" id="rn-price" placeholder="3800"></div></div>
-    <div class="g2"><div class="fg"><label>房型</label><select id="rn-type"><option>雙人套房</option><option>雙人房</option><option>家庭房</option><option>單人房</option><option>閣樓房</option><option>景觀房</option></select></div>
+    <div class="g2"><div class="fg"><label>房型</label><select id="rn-type"><option>雙人房</option><option>四人房</option></select></div>
     <div class="fg"><label>最大人數</label><input type="number" id="rn-cap" value="2" min="1" max="10"></div></div>
     <div class="fg"><label>狀態</label><select id="rn-st"><option value="available">空房</option><option value="occupied">入住中</option><option value="reserved">已預訂</option><option value="cleaning">清潔中</option><option value="maintenance">維修中</option></select></div>
     <div class="fg"><label>備註</label><textarea id="rn-note" rows="2"></textarea></div>
@@ -398,6 +398,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="modal-hdr"><div class="modal-ttl" id="rd-title">房間詳情</div><button class="modal-x" onclick="closeM('m-room-detail')">✕</button></div>
     <div id="rd-content"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+      <button class="btn btn-d" onclick="deleteRoom()">刪除房間</button>
       <button class="btn btn-o" onclick="closeM('m-room-detail')">關閉</button>
       <button class="btn btn-p" onclick="saveRD()">儲存</button>
     </div>
@@ -419,6 +420,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="fg"><label>訂房來源</label><select id="bk-src"><option>直接訂房</option><option>Airbnb</option><option>Booking.com</option><option>Agoda</option><option>電話訂房</option><option>Line 訂房</option><option>其他</option></select></div>
     <div class="fg"><label>備註</label><textarea id="bk-note" rows="2" placeholder="特殊需求…"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-bk')">取消</button><button class="btn btn-p" onclick="addBK()">確認新增</button></div>
+  </div>
+</div>
+
+<!-- Edit Finance -->
+<div class="modal-ov" id="m-edit-fin">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">編輯帳務記錄</div><button class="modal-x" onclick="closeM('m-edit-fin')">✕</button></div>
+    <div class="g2"><div class="fg"><label>類型</label><select id="ef-tp" onchange="updEditFinCats()"><option value="income">收入</option><option value="expense">支出</option></select></div>
+    <div class="fg"><label>類別</label><select id="ef-cat"></select></div></div>
+    <div class="g2"><div class="fg"><label>日期</label><input type="date" id="ef-dt"></div>
+    <div class="fg"><label>金額（元）</label><input type="number" id="ef-amt"></div></div>
+    <div class="fg"><label>說明</label><input id="ef-desc"></div>
+    <div class="fg"><label>備註</label><textarea id="ef-note" rows="2"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-fin')">取消</button><button class="btn btn-p" onclick="saveEditFin()">儲存</button></div>
   </div>
 </div>
 
@@ -573,9 +588,30 @@ const ld = k => DB[k] || [];
 function sv(k, data) {
   DB[k] = data;
   setSyncing(true);
-  db.collection('bnb').doc(k).set({ data: JSON.parse(JSON.stringify(data)) })
-    .then(() => setSyncing(false))
-    .catch(e => { console.error(e); setSyncError(); });
+  const clean = JSON.parse(JSON.stringify(data));
+  db.collection('bnb').doc(k).set({ data: clean })
+    .then(() => {
+      setSyncing(false);
+    })
+    .catch(e => {
+      console.error('Firestore 寫入失敗:', e);
+      setSyncError();
+      showToast('❌ 雲端同步失敗，資料僅存於本機', 'error');
+    });
+}
+
+// Toast 通知
+function showToast(msg, type='success'){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';
+    t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);}
+  t.textContent=msg;
+  t.style.background=type==='error'?'#E74C3C':'#2ECC71';
+  t.style.color='#fff';
+  t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.opacity='0',2500);
 }
 
 // 同步指示燈
@@ -598,8 +634,8 @@ function setSyncError() {
 // 預設資料（首次使用時寫入 Firestore）
 // ══════════════════════════════════════════
 const uid = pre => pre + Date.now() + Math.random().toString(36).slice(2,5);
-const today = () => new Date().toISOString().split('T')[0];
-const addD = (s,n) => { const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0] };
+const today = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const addD = (s,n) => { const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 
 function getDefaultData(k) {
   const t=today(), yd=addD(t,-1), t1=addD(t,1), t2=addD(t,2), t3=addD(t,3);
@@ -657,32 +693,38 @@ function getDefaultData(k) {
 // ══════════════════════════════════════════
 const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory'];
 let loadedCount = 0;
+let appReady = false;
+let pendingWrites = {};  // 追蹤我們自己觸發的寫入
 
 function startListeners() {
   COL_KEYS.forEach(k => {
-    db.collection('bnb').doc(k).onSnapshot(snap => {
+    db.collection('bnb').doc(k).onSnapshot({ includeMetadataChanges: true }, snap => {
+      const isLocalWrite = snap.metadata.hasPendingWrites;
+
       if (snap.exists) {
-        DB[k] = snap.data().data || [];
+        // 只在非本機寫入時才更新 DB（避免蓋掉剛存的資料）
+        if (!isLocalWrite) {
+          DB[k] = snap.data().data || [];
+        }
       } else {
-        // 首次使用：寫入預設資料
         const def = getDefaultData(k);
         DB[k] = def;
         db.collection('bnb').doc(k).set({ data: def });
       }
+
       loadedCount++;
-      if (loadedCount >= COL_KEYS.length) {
-        // 全部載入完成，隱藏 loading
+      if (!appReady && loadedCount >= COL_KEYS.length) {
+        appReady = true;
         const ov = document.getElementById('load-ov');
         if (ov) { ov.classList.add('hide'); setTimeout(()=>ov.remove(), 600); }
         initDate();
         setupMonths();
         renderDash();
-        // 低庫存紅點
         const inv = DB.inventory || [];
         if (inv.some(i=>i.stk<=i.min)) { const d=$('inv-dot'); if(d) d.style.display='block'; }
       }
-      // 已載入後，即時更新當前頁面
-      if (loadedCount >= COL_KEYS.length) {
+      // 只在非本機寫入的更新時才重新 render（本機寫入已在各 function 裡 render 過了）
+      if (appReady && !isLocalWrite) {
         renderSec(curSec);
       }
     }, err => {
@@ -774,19 +816,24 @@ function renderRooms(){
 function openRD(id){
   const r=(ld(K.rooms)).find(x=>x.id===id);if(!r)return;
   editRID=id;$('rd-title').textContent=r.name;
-  $('rd-content').innerHTML=`<div class="g2"><div class="fg"><label>名稱</label><input id="rd-nm" value="${r.name}"></div><div class="fg"><label>編號</label><input id="rd-num" value="${r.num}"></div></div><div class="g2"><div class="fg"><label>房型</label><select id="rd-tp">${['雙人套房','雙人房','家庭房','單人房','閣樓房','景觀房'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label>人數</label><input type="number" id="rd-cap" value="${r.cap}"></div></div><div class="g2"><div class="fg"><label>定價（元）</label><input type="number" id="rd-pr" value="${r.price}"></div><div class="fg"><label>狀態</label><select id="rd-st">${Object.entries(SLBL).map(([k,v])=>`<option value="${k}"${r.status===k?' selected':''}>${v}</option>`).join('')}</select></div></div><div class="fg"><label>備註</label><textarea id="rd-nt" rows="2">${r.note||''}</textarea></div>`;
+  $('rd-content').innerHTML=`<div class="g2"><div class="fg"><label>名稱</label><input id="rd-nm" value="${r.name}"></div><div class="fg"><label>編號</label><input id="rd-num" value="${r.num}"></div></div><div class="g2"><div class="fg"><label>房型</label><select id="rd-tp">${['雙人房','四人房'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label>人數</label><input type="number" id="rd-cap" value="${r.cap}"></div></div><div class="g2"><div class="fg"><label>定價（元）</label><input type="number" id="rd-pr" value="${r.price}"></div><div class="fg"><label>狀態</label><select id="rd-st">${Object.entries(SLBL).map(([k,v])=>`<option value="${k}"${r.status===k?' selected':''}>${v}</option>`).join('')}</select></div></div><div class="fg"><label>備註</label><textarea id="rd-nt" rows="2">${r.note||''}</textarea></div>`;
   openM('m-room-detail');
 }
 function saveRD(){
   const rooms=ld(K.rooms),i=rooms.findIndex(r=>r.id===editRID);if(i<0)return;
   rooms[i]={...rooms[i],name:$v('rd-nm'),num:$v('rd-num'),type:$v('rd-tp'),cap:+$v('rd-cap'),price:+$v('rd-pr'),status:$v('rd-st'),note:$v('rd-nt')};
-  sv(K.rooms,rooms);closeM('m-room-detail');
+  sv(K.rooms,rooms);closeM('m-room-detail');renderRooms();
+}
+function deleteRoom(){
+  if(!confirm('確認刪除此房間？相關訂房記錄不受影響。'))return;
+  sv(K.rooms,ld(K.rooms).filter(r=>r.id!==editRID));
+  closeM('m-room-detail');renderRooms();
 }
 function addRoom(){
   const nm=$v('rn-name').trim(),num=$v('rn-num').trim();if(!nm||!num)return alert('請填寫名稱和編號');
   const rooms=ld(K.rooms);
   rooms.push({id:Date.now(),name:nm,num,type:$v('rn-type'),cap:+$v('rn-cap')||2,price:+$v('rn-price')||0,status:$v('rn-st'),note:$v('rn-note')});
-  sv(K.rooms,rooms);closeM('m-add-room');['rn-name','rn-num','rn-price','rn-note'].forEach(x=>$(x).value='');
+  sv(K.rooms,rooms);closeM('m-add-room');['rn-name','rn-num','rn-price','rn-note'].forEach(x=>$(x).value='');renderRooms();
 }
 
 // ══════════════════════════════════════════
@@ -839,7 +886,7 @@ function openEditBK(id){
 function saveBK(){
   const bks=ld(K.bk),i=bks.findIndex(b=>b.id===editBKID);if(i<0)return;
   bks[i]={...bks[i],rid:+$v('ebk-rm'),nm:$v('ebk-nm'),ph:$v('ebk-ph'),ci:$v('ebk-ci'),co:$v('ebk-co'),g:+$v('ebk-g'),dep:+$v('ebk-dp'),amt:+$v('ebk-amt'),src:$v('ebk-src'),st:$v('ebk-st'),note:$v('ebk-note')};
-  sv(K.bk,bks);closeM('m-edit-bk');
+  sv(K.bk,bks);closeM('m-edit-bk');renderBK(curBKF);
 }
 
 // ── 月曆視圖
@@ -861,7 +908,7 @@ function renderCal(){
   $('cal-title').textContent=`${year}年 ${month+1}月`;
   const days=Array.from({length:daysInMonth},(_,i)=>{
     const d=new Date(year,month,i+1);
-    const ds=d.toISOString().split('T')[0];
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const w=d.getDay();
     return{n:i+1,ds,w};
   });
@@ -971,13 +1018,13 @@ function addBK(){
   const bks=ld(K.bk);
   const newId='BK'+String(bks.length+1).padStart(3,'0');
   bks.push({id:newId,rid,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
-  sv(K.bk,bks);closeM('m-add-bk');
+  sv(K.bk,bks);closeM('m-add-bk');renderBK(curBKF);
 }
 function checkIn(id){
   const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
   b.st='checkedin';
   const ri=rooms.findIndex(r=>r.id===b.rid);if(ri>=0)rooms[ri].status='occupied';
-  sv(K.bk,bks);sv(K.rooms,rooms);
+  sv(K.bk,bks);sv(K.rooms,rooms);renderBK(curBKF);renderRooms();
 }
 function checkOut(id){
   if(!confirm('確認辦理退房？'))return;
@@ -988,16 +1035,16 @@ function checkOut(id){
   if(ri>=0)rooms[ri].status='cleaning';
   const cl=ld(K.cl);
   cl.push({id:uid('C'),dt:today(),rid:b.rid,rnm:rm?rm.name:'',tp:'退房清潔',st:'待分配',done:false,note:`退房：${b.nm}`});
-  sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);
+  sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);renderBK(curBKF);renderRooms();
   alert('退房完成！已自動新增清潔任務。');
 }
 function cancelBK(id){
   if(!confirm('確認取消此訂房？'))return;
-  const bks=ld(K.bk),b=bks.find(x=>x.id===id);if(b){b.st='cancelled';sv(K.bk,bks)}
+  const bks=ld(K.bk),b=bks.find(x=>x.id===id);if(b){b.st='cancelled';sv(K.bk,bks);renderBK(curBKF);}
 }
 function deleteBK(id){
   if(!confirm('確認永久刪除此訂房？此操作無法復原。'))return;
-  sv(K.bk,ld(K.bk).filter(b=>b.id!==id));
+  sv(K.bk,ld(K.bk).filter(b=>b.id!==id));renderBK(curBKF);
 }
 
 // ══════════════════════════════════════════
@@ -1008,32 +1055,80 @@ const EXCATS=['清潔耗材','備品採購','水電費','電信費','維修費',
 function updFinCats(){const tp=$v('fn-tp');$('fn-cat').innerHTML=(tp==='income'?INCATS:EXCATS).map(c=>`<option>${c}</option>`).join('')}
 function openFinModal(){$('fn-dt').value=today();updFinCats();openM('m-add-fin')}
 function setupMonths(){
-  const s=$('f-month');if(!s)return;const d=new Date();let h='';
-  for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);const v=x.toISOString().substring(0,7);h+=`<option value="${v}">${x.getFullYear()}年${x.getMonth()+1}月</option>`}
+  const s=$('f-month');if(!s)return;
+  if(s.options.length>0)return; // 已初始化就不重複
+  const d=new Date();let h='';
+  for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);const v=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');h+=`<option value="${v}">${x.getFullYear()}年${x.getMonth()+1}月</option>`}
   s.innerHTML=h;
 }
 function renderFin(){
-  const fin=ld(K.fin),mo=$v('f-month')||today().substring(0,7),tp=$v('f-type')||'all';
-  let data=fin.filter(f=>f.dt.startsWith(mo));
+  setupMonths();
+  const fin=Array.isArray(ld(K.fin))?ld(K.fin):[];
+  const mo=$v('f-month')||today().substring(0,7);
+  const tp=$v('f-type')||'all';
+  let data=fin.filter(f=>f&&f.dt&&f.dt.startsWith(mo));
   if(tp!=='all')data=data.filter(f=>f.tp===tp);
   data=data.sort((a,b)=>b.dt.localeCompare(a.dt));
-  const mf=fin.filter(f=>f.dt.startsWith(mo));
+  const mf=fin.filter(f=>f&&f.dt&&f.dt.startsWith(mo));
   const inc=mf.filter(f=>f.tp==='income').reduce((s,f)=>s+Number(f.amt),0);
   const exp=mf.filter(f=>f.tp==='expense').reduce((s,f)=>s+Number(f.amt),0);
   const net=inc-exp;
-  $('f-inc').textContent=fmtM(inc);$('f-exp').textContent=fmtM(exp);
-  const ne=$('f-net');ne.textContent=fmtM(net);ne.className=net>=0?'stat-vl inc':'stat-vl exp';
-  const tb=$('fin-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:28px;">無帳務記錄</td></tr>';return}
-  tb.innerHTML=data.map(f=>{const ii=f.tp==='income';return`<tr><td>${f.dt}</td><td><span class="tag" style="background:${ii?'#E9F7EF':'#FDEDEC'};color:${ii?'#1A9E52':'#C0392B'};">${f.cat}</span></td><td>${f.desc}</td><td class="${ii?'inc':'exp'}" style="font-family:'Noto Sans TC',sans-serif;font-size:17px;">${ii?'＋':'－'}${fmtM(f.amt)}</td><td style="font-size:12px;color:var(--txt3);">${f.note||'—'}</td><td><button class="btn btn-o btn-sm" onclick="delFin('${f.id}')">刪除</button></td></tr>`}).join('');
+  const fi=$('f-inc'),fe=$('f-exp'),fn=$('f-net');
+  if(fi)fi.textContent=fmtM(inc);
+  if(fe)fe.textContent=fmtM(exp);
+  if(fn){fn.textContent=fmtM(net);fn.className=net>=0?'stat-vl inc':'stat-vl exp';}
+  const tb=$('fin-tbody');if(!tb)return;
+  if(!data.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:28px;">此月份無帳務記錄</td></tr>';return}
+  tb.innerHTML=data.map(f=>{const ii=f.tp==='income';return`<tr><td>${f.dt}</td><td><span class="tag" style="background:${ii?'#E9F7EF':'#FDEDEC'};color:${ii?'#1A9E52':'#C0392B'};">${f.cat||'—'}</span></td><td>${f.desc}</td><td class="${ii?'inc':'exp'}" style="font-size:15px;">${ii?'＋':'－'}${fmtM(f.amt)}</td><td style="font-size:12px;color:var(--txt3);">${f.note||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-o btn-sm" style="margin-right:4px;" onclick="openEditFin('${f.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delFin('${f.id}')">刪除</button></td></tr>`}).join('');
 }
 function addFin(){
-  const dt=$v('fn-dt'),amt=+$v('fn-amt'),desc=$v('fn-desc').trim();
-  if(!dt||!amt||!desc)return alert('請填寫日期、金額和說明');
-  const fin=ld(K.fin);fin.push({id:uid('F'),dt,tp:$v('fn-tp'),cat:$v('fn-cat'),desc,amt,note:$v('fn-note')});
-  sv(K.fin,fin);['fn-amt','fn-desc','fn-note'].forEach(x=>$(x).value='');closeM('m-add-fin');
+  const dt=$v('fn-dt');
+  const amt=parseFloat($v('fn-amt'));
+  const desc=$v('fn-desc').trim();
+  const tp=$v('fn-tp');
+  const cat=$v('fn-cat');
+  if(!dt)return alert('請選擇日期');
+  if(!amt||amt<=0)return alert('請輸入有效金額');
+  if(!desc)return alert('請填寫說明');
+  const fin=Array.isArray(ld(K.fin))?[...ld(K.fin)]:[];
+  fin.push({id:uid('F'),dt,tp,cat,desc,amt,note:$v('fn-note')});
+  sv(K.fin,fin);
+  $('fn-amt').value='';$('fn-desc').value='';$('fn-note').value='';
+  closeM('m-add-fin');
+  renderFin();
+  showToast('✅ 帳務記錄已儲存');
 }
-function delFin(id){if(!confirm('確認刪除？'))return;sv(K.fin,ld(K.fin).filter(f=>f.id!==id))}
+function delFin(id){
+  if(!confirm('確認刪除此帳務記錄？'))return;
+  sv(K.fin,(ld(K.fin)||[]).filter(f=>f.id!==id));
+  renderFin();
+  showToast('已刪除');
+}
+let editFinID=null;
+function openEditFin(id){
+  const f=(ld(K.fin)||[]).find(x=>x.id===id);if(!f)return;
+  editFinID=id;
+  $('ef-dt').value=f.dt;
+  $('ef-tp').value=f.tp;updEditFinCats();
+  $('ef-cat').value=f.cat||'';
+  $('ef-amt').value=f.amt;
+  $('ef-desc').value=f.desc;
+  $('ef-note').value=f.note||'';
+  openM('m-edit-fin');
+}
+function updEditFinCats(){
+  const tp=$v('ef-tp');
+  $('ef-cat').innerHTML=(tp==='income'?INCATS:EXCATS).map(c=>`<option>${c}</option>`).join('');
+}
+function saveEditFin(){
+  const fin=ld(K.fin)||[],i=fin.findIndex(f=>f.id===editFinID);if(i<0)return;
+  const amt=parseFloat($v('ef-amt'));
+  const desc=$v('ef-desc').trim();
+  if(!amt||amt<=0)return alert('請輸入有效金額');
+  if(!desc)return alert('請填寫說明');
+  fin[i]={...fin[i],dt:$v('ef-dt'),tp:$v('ef-tp'),cat:$v('ef-cat'),amt,desc,note:$v('ef-note')};
+  sv(K.fin,fin);closeM('m-edit-fin');renderFin();showToast('✅ 已更新');
+}
 
 // ══════════════════════════════════════════
 // CLEANING
@@ -1054,13 +1149,13 @@ function renderCL(){
   const all=[...cl].sort((a,b)=>b.dt.localeCompare(a.dt));
   $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
 }
-function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl)}}
-function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id))}
+function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl);renderCL();}}
+function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id));renderCL();}
 function addCL(){
   const dt=$v('cl-dt'),sel=$('cl-rm'),rid=+sel.value,rnm=sel.options[sel.selectedIndex]?.getAttribute('data-nm')||'';
   if(!dt||!rid)return alert('請選擇日期和房間');
   const cl=ld(K.cl);cl.push({id:uid('C'),dt,rid,rnm,tp:$v('cl-tp'),st:$v('cl-st'),done:false,note:$v('cl-note')});
-  sv(K.cl,cl);closeM('m-add-cl');
+  sv(K.cl,cl);closeM('m-add-cl');renderCL();
 }
 
 // ══════════════════════════════════════════
@@ -1077,7 +1172,7 @@ function renderGuests(){
 function addGuest(){
   const nm=$v('gu-nm').trim();if(!nm)return alert('請填寫姓名');
   const guests=ld(K.guests);guests.push({id:uid('G'),nm,ph:$v('gu-ph'),em:$v('gu-em'),idn:$v('gu-id'),src:$v('gu-src'),note:$v('gu-note'),stays:0});
-  sv(K.guests,guests);['gu-nm','gu-ph','gu-em','gu-id','gu-note'].forEach(x=>$(x).value='');closeM('m-add-guest');
+  sv(K.guests,guests);['gu-nm','gu-ph','gu-em','gu-id','gu-note'].forEach(x=>$(x).value='');closeM('m-add-guest');renderGuests();
 }
 function openEditGuest(id){
   const g=ld(K.guests).find(x=>x.id===id);if(!g)return;
@@ -1088,9 +1183,9 @@ function openEditGuest(id){
 function saveGuest(){
   const guests=ld(K.guests),i=guests.findIndex(g=>g.id===editGID);if(i<0)return;
   guests[i]={...guests[i],nm:$v('eg-nm'),ph:$v('eg-ph'),em:$v('eg-em'),idn:$v('eg-id'),src:$v('eg-src'),note:$v('eg-note')};
-  sv(K.guests,guests);closeM('m-edit-guest');
+  sv(K.guests,guests);closeM('m-edit-guest');renderGuests();
 }
-function delGuest(id){if(!confirm('確認刪除此顧客？'))return;sv(K.guests,ld(K.guests).filter(g=>g.id!==id))}
+function delGuest(id){if(!confirm('確認刪除此顧客？'))return;sv(K.guests,ld(K.guests).filter(g=>g.id!==id));renderGuests();}
 
 // ══════════════════════════════════════════
 // INVENTORY
@@ -1116,16 +1211,16 @@ function renderInv(cat){
 function addInv(){
   const nm=$v('iv-nm').trim();if(!nm)return alert('請填寫品項名稱');
   const inv=ld(K.inv);inv.push({id:uid('I'),nm,cat:$v('iv-cat'),unit:$v('iv-unit')||'個',stk:+$v('iv-stk')||0,min:+$v('iv-min')||5});
-  sv(K.inv,inv);['iv-nm','iv-unit','iv-stk','iv-min'].forEach(x=>$(x).value='');closeM('m-add-inv');
+  sv(K.inv,inv);['iv-nm','iv-unit','iv-stk','iv-min'].forEach(x=>$(x).value='');closeM('m-add-inv');renderInv(curInvF);
 }
 function openAdj(id,nm){adjInvId=id;$('adj-ttl').textContent=`調整庫存：${nm}`;$('adj-amt').value='';openM('m-adj-stk')}
 function applyAdj(){
   const inv=ld(K.inv),i=inv.findIndex(x=>x.id===adjInvId);if(i<0)return;
   const tp=$v('adj-tp'),amt=+$v('adj-amt')||0;
   if(tp==='add')inv[i].stk+=amt;else if(tp==='sub')inv[i].stk=Math.max(0,inv[i].stk-amt);else inv[i].stk=amt;
-  sv(K.inv,inv);closeM('m-adj-stk');
+  sv(K.inv,inv);closeM('m-adj-stk');renderInv(curInvF);
 }
-function delInv(id){if(!confirm('確認刪除？'))return;sv(K.inv,ld(K.inv).filter(i=>i.id!==id))}
+function delInv(id){if(!confirm('確認刪除？'))return;sv(K.inv,ld(K.inv).filter(i=>i.id!==id));renderInv(curInvF);}
 
 // ══════════════════════════════════════════
 // INIT
