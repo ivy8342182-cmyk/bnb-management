@@ -935,46 +935,53 @@ function renderCal(){
   const rooms=ld(K.rooms),bks=ld(K.bk).filter(b=>b.st!=='cancelled');
   const t=today();
   $('cal-title').textContent=`${year}年 ${month+1}月`;
-  const days=Array.from({length:daysInMonth},(_,i)=>{
-    const d=new Date(year,month,i+1);
+  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
+
+  // 用 HTML table + table-layout:fixed 讓格子自動等寬填滿容器
+  let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed;">`;
+
+  // 欄寬定義：第一欄房間名稱固定，其餘日期欄平均分配
+  html+=`<colgroup><col style="width:88px;">`;
+  for(let i=0;i<daysInMonth;i++) html+=`<col>`;
+  html+=`</colgroup>`;
+
+  // 標題列
+  html+=`<thead><tr><th style="background:var(--bg);padding:8px;font-size:11px;color:var(--txt3);font-weight:600;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:left;">房間</th>`;
+  for(let i=1;i<=daysInMonth;i++){
+    const d=new Date(year,month,i);
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const w=d.getDay();
-    return{n:i+1,ds,w};
-  });
-  // Status colors
-  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
-  let html=`<div class="cal-wrap" style="display:grid;">`;
-  // Header row
-  html+=`<div style="display:flex;background:var(--bg);border-bottom:1px solid var(--border);">
-    <div style="min-width:110px;padding:8px 12px;font-size:11px;color:var(--txt3);border-right:1px solid var(--border);font-weight:600;">房間</div>`;
-  days.forEach(d=>{
-    const isToday=d.ds===t,isWk=d.w===0||d.w===6;
-    html+=`<div style="min-width:34px;max-width:34px;text-align:center;padding:6px 0;font-size:10px;color:${isToday?'var(--orange)':isWk?'#E74C3C':'var(--txt3)'};font-weight:${isToday?'700':'400'};border-right:1px solid var(--border);">${d.n}<br><span style="font-size:9px;">${['日','一','二','三','四','五','六'][d.w]}</span></div>`;
-  });
-  html+=`</div>`;
-  // Room rows
+    const isToday=ds===t, isWk=w===0||w===6;
+    const color=isToday?'var(--orange)':isWk?'#E74C3C':'var(--txt3)';
+    html+=`<th style="background:var(--bg);padding:5px 2px;font-size:10px;color:${color};font-weight:${isToday?'700':'400'};border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:center;line-height:1.4;">${i}<br><span style="font-size:9px;">${['日','一','二','三','四','五','六'][w]}</span></th>`;
+  }
+  html+=`</tr></thead><tbody>`;
+
+  // 各房間列
   rooms.forEach(r=>{
-    html+=`<div style="display:flex;border-bottom:1px solid var(--border);">
-      <div style="min-width:110px;padding:10px 12px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--bg);border-right:1px solid var(--border);display:flex;align-items:center;">${r.name}</div>`;
-    days.forEach(d=>{
-      const bk=bks.find(b=>b.rid===r.id&&b.ci<=d.ds&&b.co>d.ds);
-      const isStart=bk&&bk.ci===d.ds,isEnd=bk&&addD(bk.co,-1)===d.ds;
+    html+=`<tr><td style="padding:6px 8px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--bg);border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</td>`;
+    for(let i=1;i<=daysInMonth;i++){
+      const d=new Date(year,month,i);
+      const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const bk=bks.find(b=>b.rid===r.id&&b.ci<=ds&&b.co>ds);
       const color=bk?STATUS_COLOR[bk.st]||'#95A5A6':null;
-      let cellStyle=`min-width:34px;max-width:34px;height:36px;border-right:1px solid var(--border);position:relative;`;
-      if(bk){cellStyle+=`background:${color}22;`;}
-      if(isStart){cellStyle+=`border-left:3px solid ${color};`;}
-      html+=`<div style="${cellStyle}" title="${bk?bk.nm+' ('+bk.ci+'→'+bk.co+'）':''}">`;
-      if(isStart&&bk)html+=`<div style="position:absolute;left:2px;top:50%;transform:translateY(-50%);font-size:9px;color:${color};font-weight:600;white-space:nowrap;overflow:hidden;max-width:30px;">${bk.nm[0]}</div>`;
-      html+=`</div>`;
-    });
-    html+=`</div>`;
+      const isStart=bk&&bk.ci===ds;
+      const bg=bk?color+'22':'transparent';
+      const bl=isStart?`border-left:2px solid ${color};`:'';
+      html+=`<td style="padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:${bg};${bl}height:34px;" title="${bk?bk.nm+' ('+bk.ci+'→'+bk.co+')':''}">`;
+      if(isStart&&bk){
+        html+=`<div style="font-size:9px;color:${color};font-weight:600;padding:2px 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${bk.nm}</div>`;
+      }
+      html+=`</td>`;
+    }
+    html+=`</tr>`;
   });
-  html+=`</div>`;
-  // Legend
-  html+=`<div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:14px;font-size:12px;color:var(--txt3);">
-    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3498DB22;border-left:3px solid #3498DB;margin-right:4px;"></span>已確認</span>
-    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#F2652222;border-left:3px solid #F26522;margin-right:4px;"></span>入住中</span>
-    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#95A5A622;border-left:3px solid #95A5A6;margin-right:4px;"></span>已退房</span>
+
+  html+=`</tbody></table>`;
+  html+=`<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:12px;color:var(--txt3);">
+    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3498DB22;border-left:2px solid #3498DB;"></span>已確認</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#F2652222;border-left:2px solid #F26522;"></span>入住中</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#95A5A622;border-left:2px solid #95A5A6;"></span>已退房</span>
   </div>`;
   $('cal-grid').innerHTML=html;
 }
