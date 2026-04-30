@@ -451,6 +451,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   </div>
 </div>
 
+<!-- Edit Cleaning -->
+<div class="modal-ov" id="m-edit-cl">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">編輯清潔任務</div><button class="modal-x" onclick="closeM('m-edit-cl')">✕</button></div>
+    <div class="g2"><div class="fg"><label>日期</label><input type="date" id="ecl-dt"></div>
+    <div class="fg"><label>房間</label><select id="ecl-rm"></select></div></div>
+    <div class="g2"><div class="fg"><label>清潔類型</label><select id="ecl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
+    <div class="fg"><label>負責人員</label><select id="ecl-st"><option>小美</option><option>小華</option><option>大明</option><option>待分配</option></select></div></div>
+    <div class="fg"><label>備註</label><textarea id="ecl-note" rows="2"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-cl')">取消</button><button class="btn btn-p" onclick="saveEditCL()">儲存</button></div>
+  </div>
+</div>
+
 <!-- Add Cleaning -->
 <div class="modal-ov" id="m-add-cl">
   <div class="modal">
@@ -761,7 +774,18 @@ function goTo(s){
   renderSec(s);
 }
 function setMobNav(el){document.querySelectorAll('.mob-nav-item').forEach(x=>x.classList.remove('active'));el.classList.add('active')}
-function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
+function renderSec(s){
+  const fn={
+    dashboard:renderDash,
+    rooms:renderRooms,
+    bookings:()=>{ renderBK(curBKF); renderCal(); },
+    finance:renderFin,
+    cleaning:renderCL,
+    guests:renderGuests,
+    inventory:()=>renderInv(curInvF)
+  };
+  fn[s]?.();
+}
 function toggleSB(){$('sidebar').classList.toggle('open')}
 
 // ══════════════════════════════════════════
@@ -843,6 +867,10 @@ const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',
 const BSCLR={confirmed:{bg:'#EBF5FB',c:'#1A5276'},checkedin:{bg:'#E9F7EF',c:'#1A9E52'},checkedout:{bg:'#F4F6F7',c:'#717D7E'},cancelled:{bg:'#FDEDEC',c:'#C0392B'}};
 let curBKF='all';
 function filterBK(f,btn){curBKF=f;document.querySelectorAll('.bk-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBK(f)}
+function syncBK(){
+  renderBK(curBKF);
+  renderCal();  // 永遠同時更新月曆，不管目前在哪個視圖
+}
 function renderBK(f){
   const bks=ld(K.bk),rooms=ld(K.rooms);
   let data=(f==='all'?bks:bks.filter(b=>b.st===f)).sort((a,b)=>b.id.localeCompare(a.id));
@@ -886,7 +914,7 @@ function openEditBK(id){
 function saveBK(){
   const bks=ld(K.bk),i=bks.findIndex(b=>b.id===editBKID);if(i<0)return;
   bks[i]={...bks[i],rid:+$v('ebk-rm'),nm:$v('ebk-nm'),ph:$v('ebk-ph'),ci:$v('ebk-ci'),co:$v('ebk-co'),g:+$v('ebk-g'),dep:+$v('ebk-dp'),amt:+$v('ebk-amt'),src:$v('ebk-src'),st:$v('ebk-st'),note:$v('ebk-note')};
-  sv(K.bk,bks);closeM('m-edit-bk');renderBK(curBKF);
+  sv(K.bk,bks);closeM('m-edit-bk');syncBK();
 }
 
 // ── 月曆視圖
@@ -897,7 +925,8 @@ function toggleBKView(){
   $('bk-list-view').style.display=bkView==='list'?'block':'none';
   $('bk-cal-view').style.display=bkView==='cal'?'block':'none';
   $('view-toggle').textContent=bkView==='list'?'📅 月曆視圖':'☰ 列表視圖';
-  if(bkView==='cal')renderCal();
+  if(bkView==='cal') renderCal();
+  else renderBK(curBKF);
 }
 function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++}if(calMonth<0){calMonth=11;calYear--}renderCal()}
 function renderCal(){
@@ -1018,13 +1047,13 @@ function addBK(){
   const bks=ld(K.bk);
   const newId='BK'+String(bks.length+1).padStart(3,'0');
   bks.push({id:newId,rid,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
-  sv(K.bk,bks);closeM('m-add-bk');renderBK(curBKF);
+  sv(K.bk,bks);closeM('m-add-bk');syncBK();
 }
 function checkIn(id){
   const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
   b.st='checkedin';
   const ri=rooms.findIndex(r=>r.id===b.rid);if(ri>=0)rooms[ri].status='occupied';
-  sv(K.bk,bks);sv(K.rooms,rooms);renderBK(curBKF);renderRooms();
+  sv(K.bk,bks);sv(K.rooms,rooms);syncBK();renderRooms();
 }
 function checkOut(id){
   if(!confirm('確認辦理退房？'))return;
@@ -1035,16 +1064,16 @@ function checkOut(id){
   if(ri>=0)rooms[ri].status='cleaning';
   const cl=ld(K.cl);
   cl.push({id:uid('C'),dt:today(),rid:b.rid,rnm:rm?rm.name:'',tp:'退房清潔',st:'待分配',done:false,note:`退房：${b.nm}`});
-  sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);renderBK(curBKF);renderRooms();
+  sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);syncBK();renderRooms();
   alert('退房完成！已自動新增清潔任務。');
 }
 function cancelBK(id){
   if(!confirm('確認取消此訂房？'))return;
-  const bks=ld(K.bk),b=bks.find(x=>x.id===id);if(b){b.st='cancelled';sv(K.bk,bks);renderBK(curBKF);}
+  const bks=ld(K.bk),b=bks.find(x=>x.id===id);if(b){b.st='cancelled';sv(K.bk,bks);syncBK();}
 }
 function deleteBK(id){
   if(!confirm('確認永久刪除此訂房？此操作無法復原。'))return;
-  sv(K.bk,ld(K.bk).filter(b=>b.id!==id));renderBK(curBKF);
+  sv(K.bk,ld(K.bk).filter(b=>b.id!==id));syncBK();
 }
 
 // ══════════════════════════════════════════
@@ -1147,10 +1176,30 @@ function renderCL(){
   const $up=$('cl-upcoming');
   $up.innerHTML=up.length?up.sort((a,b)=>a.dt.localeCompare(b.dt)).map(c=>`<div class="clean-task"><div style="width:38px;text-align:center;font-size:12px;color:var(--amber);font-weight:500;">${fmtD(c.dt)}<br><span style="font-size:10px;color:var(--txt3);">週${dayLbl(c.dt)}</span></div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div></div></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">近期無排班</div>';
   const all=[...cl].sort((a,b)=>b.dt.localeCompare(a.dt));
-  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
+  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditCL('${c.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
 }
 function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl);renderCL();}}
 function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id));renderCL();}
+let editCLID=null;
+function openEditCL(id){
+  const c=ld(K.cl).find(x=>x.id===id);if(!c)return;
+  editCLID=id;
+  const rooms=ld(K.rooms);
+  $('ecl-rm').innerHTML=rooms.map(r=>`<option value="${r.id}" data-nm="${r.name}"${r.id===c.rid?' selected':''}>${r.name}</option>`).join('');
+  $('ecl-dt').value=c.dt;
+  $('ecl-tp').value=c.tp;
+  $('ecl-st').value=c.st;
+  $('ecl-note').value=c.note||'';
+  openM('m-edit-cl');
+}
+function saveEditCL(){
+  const cl=ld(K.cl),i=cl.findIndex(x=>x.id===editCLID);if(i<0)return;
+  const sel=$('ecl-rm');
+  const rid=+sel.value;
+  const rnm=sel.options[sel.selectedIndex]?.getAttribute('data-nm')||cl[i].rnm;
+  cl[i]={...cl[i],dt:$v('ecl-dt'),rid,rnm,tp:$v('ecl-tp'),st:$v('ecl-st'),note:$v('ecl-note')};
+  sv(K.cl,cl);closeM('m-edit-cl');renderCL();showToast('✅ 已更新');
+}
 function addCL(){
   const dt=$v('cl-dt'),sel=$('cl-rm'),rid=+sel.value,rnm=sel.options[sel.selectedIndex]?.getAttribute('data-nm')||'';
   if(!dt||!rid)return alert('請選擇日期和房間');
