@@ -467,8 +467,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 </div>
 
 <!-- Staff Management -->
-<div class="modal-ov" id="m-staff">
-  <div class="modal" style="max-width:380px;">
+<div class="modal-ov" id="m-staff" style="z-index:300;">
+  <div class="modal" style="max-width:380px;z-index:301;">
     <div class="modal-hdr"><div class="modal-ttl">👷 管理清潔人員</div><button class="modal-x" onclick="closeM('m-staff')">✕</button></div>
     <div id="staff-list" style="margin-bottom:16px;"></div>
     <div style="display:flex;gap:8px;">
@@ -486,7 +486,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="ecl-dt"></div>
     <div class="fg"><label>房間</label><select id="ecl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="ecl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><label>負責人員 <button type="button" onclick="openM('m-staff')" style="font-size:11px;color:var(--orange);background:none;border:none;cursor:pointer;padding:0 4px;">✏️ 管理人員</button></label><select id="ecl-st"></select></div></div>
+    <div class="fg"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><label style="margin-bottom:0;">負責人員</label><button type="button" onclick="openM('m-staff')" style="font-size:12px;color:var(--orange);background:var(--orange-p);border:1px solid rgba(242,101,34,.2);border-radius:6px;cursor:pointer;padding:3px 10px;font-family:inherit;">✏️ 管理人員</button></div><div id="ecl-st-wrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;min-height:44px;background:var(--white);"></div></div></div>
     <div class="fg"><label>備註</label><textarea id="ecl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-cl')">取消</button><button class="btn btn-p" onclick="saveEditCL()">儲存</button></div>
   </div>
@@ -499,7 +499,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="cl-dt"></div>
     <div class="fg"><label>房間</label><select id="cl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="cl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><label>負責人員 <button type="button" onclick="openM('m-staff')" style="font-size:11px;color:var(--orange);background:none;border:none;cursor:pointer;padding:0 4px;">✏️ 管理人員</button></label><select id="cl-st"></select></div></div>
+    <div class="fg"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><label style="margin-bottom:0;">負責人員</label><button type="button" onclick="openM('m-staff')" style="font-size:12px;color:var(--orange);background:var(--orange-p);border:1px solid rgba(242,101,34,.2);border-radius:6px;cursor:pointer;padding:3px 10px;font-family:inherit;">✏️ 管理人員</button></div><div id="cl-st-wrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;min-height:44px;background:var(--white);"></div></div></div>
     <div class="fg"><label>備註</label><textarea id="cl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-cl')">取消</button><button class="btn btn-p" onclick="addCL()">新增任務</button></div>
   </div>
@@ -1221,8 +1221,36 @@ function saveEditFin(){
 // ══════════════════════════════════════════
 // ── 人員管理
 function getStaff(){ return ld(K.staff)||['待分配']; }
-function staffOptions(selectedVal=''){
-  return getStaff().map(s=>`<option${s===selectedVal?' selected':''}>${s}</option>`).join('');
+function renderStaffChecks(wrapId, selectedArr){
+  // selectedArr can be string or array
+  const sel = Array.isArray(selectedArr) ? selectedArr : (selectedArr ? [selectedArr] : []);
+  const staff = getStaff();
+  const wrap = $(wrapId);
+  if(!wrap) return;
+  wrap.innerHTML = staff.map(s => {
+    const checked = sel.includes(s);
+    return `<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid ${checked?'var(--orange)':'var(--border2)'};background:${checked?'var(--orange-p)':'transparent'};cursor:pointer;font-size:13px;transition:all .15s;">
+      <input type="checkbox" value="${s}" ${checked?'checked':''} onchange="updateStaffCheck(this,'${wrapId}')" style="width:auto;accent-color:var(--orange);">
+      ${s}
+    </label>`;
+  }).join('');
+}
+function updateStaffCheck(cb, wrapId){
+  // Update pill style on check/uncheck
+  const lbl = cb.closest('label');
+  if(lbl){
+    lbl.style.border = cb.checked?'1px solid var(--orange)':'1px solid var(--border2)';
+    lbl.style.background = cb.checked?'var(--orange-p)':'transparent';
+  }
+}
+function getCheckedStaff(wrapId){
+  const wrap=$(wrapId); if(!wrap) return ['待分配'];
+  const checked=[...wrap.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
+  return checked.length ? checked : ['待分配'];
+}
+function staffDisplayName(st){
+  if(Array.isArray(st)) return st.join('、');
+  return st||'待分配';
 }
 function renderStaffList(){
   const staff=getStaff();
@@ -1250,7 +1278,10 @@ function saveStaff(i){
   const staff=getStaff(),old=staff[i],newName=$('es-'+i)?.value.trim();
   if(!newName)return;
   staff[i]=newName;sv(K.staff,staff);
-  const cl=ld(K.cl)||[];cl.forEach(c=>{if(c.st===old)c.st=newName;});sv(K.cl,cl);
+  const cl=ld(K.cl)||[];cl.forEach(c=>{
+    if(Array.isArray(c.st)){const i=c.st.indexOf(old);if(i>=0)c.st[i]=newName;}
+    else if(c.st===old)c.st=newName;
+  });sv(K.cl,cl);
   renderStaffList();refreshStaffSelects();showToast('✅ 已更新');
 }
 function deleteStaff(i){
@@ -1259,22 +1290,27 @@ function deleteStaff(i){
   renderStaffList();refreshStaffSelects();
 }
 function refreshStaffSelects(){
-  const cl=$('cl-st'),ecl=$('ecl-st');
-  if(cl)cl.innerHTML=staffOptions(cl.value);
-  if(ecl)ecl.innerHTML=staffOptions(ecl.value);
+  const clw=$('cl-st-wrap'),eclw=$('ecl-st-wrap');
+  if(clw) renderStaffChecks('cl-st-wrap', getCheckedStaff('cl-st-wrap'));
+  if(eclw) renderStaffChecks('ecl-st-wrap', getCheckedStaff('ecl-st-wrap'));
 }
 
-function openCleanModal(){\n  $('cl-dt').value=today();\n  $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');\n  $('cl-st').innerHTML=staffOptions();\n  openM('m-add-cl');\n}
+function openCleanModal(){
+  $('cl-dt').value=today();
+  $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');
+  renderStaffChecks('cl-st-wrap', ['待分配']);
+  openM('m-add-cl');
+}
 function renderCL(){
   const cl=ld(K.cl),t=today();
   const td=cl.filter(c=>c.dt===t);
   const up=cl.filter(c=>c.dt>t&&c.dt<=addD(t,7));
   const $td=$('cl-today');
-  $td.innerHTML=td.length?td.map(c=>`<div class="clean-task ${c.done?'done':''}"><div class="chk ${c.done?'checked':''}" onclick="togCL('${c.id}')">${c.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div>${c.note?`<div style="font-size:11px;color:var(--txt3);">${c.note}</div>`:''}</div><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'完成':'待做'}</span></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無清潔任務</div>';
+  $td.innerHTML=td.length?td.map(c=>`<div class="clean-task ${c.done?'done':''}"><div class="chk ${c.done?'checked':''}" onclick="togCL('${c.id}')">${c.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${staffDisplayName(c.st)}</div>${c.note?`<div style="font-size:11px;color:var(--txt3);">${c.note}</div>`:''}</div><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'完成':'待做'}</span></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無清潔任務</div>';
   const $up=$('cl-upcoming');
-  $up.innerHTML=up.length?up.sort((a,b)=>a.dt.localeCompare(b.dt)).map(c=>`<div class="clean-task"><div style="width:38px;text-align:center;font-size:12px;color:var(--amber);font-weight:500;">${fmtD(c.dt)}<br><span style="font-size:10px;color:var(--txt3);">週${dayLbl(c.dt)}</span></div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div></div></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">近期無排班</div>';
+  $up.innerHTML=up.length?up.sort((a,b)=>a.dt.localeCompare(b.dt)).map(c=>`<div class="clean-task"><div style="width:38px;text-align:center;font-size:12px;color:var(--amber);font-weight:500;">${fmtD(c.dt)}<br><span style="font-size:10px;color:var(--txt3);">週${dayLbl(c.dt)}</span></div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${staffDisplayName(c.st)}</div></div></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">近期無排班</div>';
   const all=[...cl].sort((a,b)=>b.dt.localeCompare(a.dt));
-  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditCL('${c.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
+  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${staffDisplayName(c.st)}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditCL('${c.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
 }
 function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl);renderCL();}}
 function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id));renderCL();}
@@ -1286,7 +1322,7 @@ function openEditCL(id){
   $('ecl-rm').innerHTML=rooms.map(r=>`<option value="${r.id}" data-nm="${r.name}"${r.id===c.rid?' selected':''}>${r.name}</option>`).join('');
   $('ecl-dt').value=c.dt;
   $('ecl-tp').value=c.tp;
-  $('ecl-st').innerHTML=staffOptions(c.st);
+  renderStaffChecks('ecl-st-wrap', c.st);
   $('ecl-note').value=c.note||'';
   openM('m-edit-cl');
 }
@@ -1295,13 +1331,15 @@ function saveEditCL(){
   const sel=$('ecl-rm');
   const rid=+sel.value;
   const rnm=sel.options[sel.selectedIndex]?.getAttribute('data-nm')||cl[i].rnm;
-  cl[i]={...cl[i],dt:$v('ecl-dt'),rid,rnm,tp:$v('ecl-tp'),st:$v('ecl-st'),note:$v('ecl-note')};
+  const stArr=getCheckedStaff('ecl-st-wrap');
+  cl[i]={...cl[i],dt:$v('ecl-dt'),rid,rnm,tp:$v('ecl-tp'),st:stArr,note:$v('ecl-note')};
   sv(K.cl,cl);closeM('m-edit-cl');renderCL();showToast('✅ 已更新');
 }
 function addCL(){
   const dt=$v('cl-dt'),sel=$('cl-rm'),rid=+sel.value,rnm=sel.options[sel.selectedIndex]?.getAttribute('data-nm')||'';
   if(!dt||!rid)return alert('請選擇日期和房間');
-  const cl=ld(K.cl);cl.push({id:uid('C'),dt,rid,rnm,tp:$v('cl-tp'),st:$v('cl-st'),done:false,note:$v('cl-note')});
+  const stArr2=getCheckedStaff('cl-st-wrap');
+  const cl=ld(K.cl);cl.push({id:uid('C'),dt,rid,rnm,tp:$v('cl-tp'),st:stArr2,done:false,note:$v('cl-note')});
   sv(K.cl,cl);closeM('m-add-cl');renderCL();
 }
 
