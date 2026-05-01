@@ -166,8 +166,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 
 <div id="load-ov">
   <div class="ld-title">橋見幸福民宿</div>
-  <div class="ld-sub">正在連線雲端資料…</div>
+  <div class="ld-sub" id="ld-sub-txt">正在連線雲端資料…</div>
   <div class="ld-spin"></div>
+  <button onclick="startApp()" style="margin-top:28px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;">略過，直接進入</button>
 </div>
 
 <button id="mob-btn" onclick="toggleSB()">☰</button>
@@ -747,8 +748,8 @@ function startApp(){
 }
 
 function startListeners() {
-  // 10秒後強制啟動，避免 Firebase 連線失敗卡住
-  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 10000);
+  // 3秒後強制啟動，避免 Firebase 連線失敗卡住
+  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 3000);
 
   COL_KEYS.forEach(k => {
     db.collection('bnb').doc(k).onSnapshot(snap => {
