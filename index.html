@@ -48,6 +48,7 @@
   .g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
   .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px;text-align:center}
   #mob-nav{display:flex}
+  #cal-hint{display:block!important}
   table th:nth-child(3),table td:nth-child(3),
   table th:nth-child(6),table td:nth-child(6),
   table th:nth-child(7),table td:nth-child(7){display:none}
@@ -116,6 +117,7 @@ body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;ba
 .tw{overflow-x:auto}
 #bk-tbody tr td{vertical-align:middle}
 #bk-tbody .btn{vertical-align:middle;margin:2px}
+#s-bookings th[onclick]:hover{color:var(--orange);background:var(--orange-p)}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:10px 14px;font-size:12px;font-weight:500;color:var(--txt3);background:var(--bg);border-bottom:1px solid var(--border)}
 td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle}
@@ -275,7 +277,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
           <button class="btn btn-o btn-sm bk-f" onclick="filterBK('cancelled',this)">已取消</button>
         </div>
         <div class="card" style="padding:0;overflow:hidden;">
-          <div class="tw"><table><thead><tr><th>編號</th><th>房間</th><th>客人</th><th>入住</th><th>退房</th><th>人數</th><th>金額</th><th>狀態</th><th>操作</th></tr></thead>
+          <div class="tw"><table><thead><tr>
+            <th>編號</th>
+            <th id="th-room" onclick="sortBK('room')" style="cursor:pointer;user-select:none;">房間 <span id="si-room"></span></th>
+            <th>客人</th>
+            <th id="th-ci" onclick="sortBK('ci')" style="cursor:pointer;user-select:none;">入住 <span id="si-ci">↓</span></th>
+            <th id="th-co" onclick="sortBK('co')" style="cursor:pointer;user-select:none;">退房 <span id="si-co"></span></th>
+            <th>人數</th><th>金額</th><th>狀態</th><th>操作</th>
+          </tr></thead>
           <tbody id="bk-tbody"></tbody></table></div>
         </div>
       </div>
@@ -287,9 +296,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
           <span id="cal-title" style="font-weight:600;font-size:15px;"></span>
           <button class="btn btn-o btn-sm" onclick="calNav(1)">下個月 ›</button>
         </div>
+        <p style="font-size:11px;color:var(--txt3);text-align:center;margin-bottom:8px;display:none;" id="cal-hint">← 左右滑動查看完整月份 →</p>
         <div class="card" style="padding:0;overflow:hidden;">
-          <!-- 月曆房間欄位 -->
-          <div style="overflow-x:auto;"><div id="cal-grid"></div></div>
+          <!-- 月曆：手機可左右滑動 -->
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+            <div id="cal-grid" style="min-width:600px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -866,6 +878,21 @@ function addRoom(){
 const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',cancelled:'已取消'};
 const BSCLR={confirmed:{bg:'#EBF5FB',c:'#1A5276'},checkedin:{bg:'#E9F7EF',c:'#1A9E52'},checkedout:{bg:'#F4F6F7',c:'#717D7E'},cancelled:{bg:'#FDEDEC',c:'#C0392B'}};
 let curBKF='all';
+let bkSortKey='ci', bkSortDir='desc'; // 預設依入住日期新→舊
+
+function sortBK(key){
+  if(bkSortKey===key) bkSortDir=bkSortDir==='asc'?'desc':'asc';
+  else { bkSortKey=key; bkSortDir='asc'; }
+  // 更新標題箭頭
+  ['ci','co','room'].forEach(k=>{
+    const el=$('si-'+k);
+    if(!el)return;
+    el.textContent=bkSortKey===k?(bkSortDir==='asc'?'↑':'↓'):'';
+    const th=$('th-'+k);
+    if(th)th.style.color=bkSortKey===k?'var(--orange)':'';
+  });
+  renderBK(curBKF);
+}
 function filterBK(f,btn){curBKF=f;document.querySelectorAll('.bk-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBK(f)}
 function syncBK(){
   renderBK(curBKF);
@@ -873,7 +900,19 @@ function syncBK(){
 }
 function renderBK(f){
   const bks=ld(K.bk),rooms=ld(K.rooms);
-  let data=(f==='all'?bks:bks.filter(b=>b.st===f)).sort((a,b)=>b.id.localeCompare(a.id));
+  let data=f==='all'?[...bks]:bks.filter(b=>b.st===f);
+  // 排序
+  data.sort((a,b)=>{
+    let va,vb;
+    if(bkSortKey==='room'){
+      const ra=rooms.find(r=>r.id===a.rid),rb=rooms.find(r=>r.id===b.rid);
+      va=(ra?.name||'');vb=(rb?.name||'');
+    } else {
+      va=a[bkSortKey]||''; vb=b[bkSortKey]||'';
+    }
+    const cmp=va.localeCompare(vb);
+    return bkSortDir==='asc'?cmp:-cmp;
+  });
   const tb=$('bk-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
@@ -937,12 +976,10 @@ function renderCal(){
   $('cal-title').textContent=`${year}年 ${month+1}月`;
   const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
 
-  // 用 HTML table + table-layout:fixed 讓格子自動等寬填滿容器
-  let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed;">`;
-
-  // 欄寬定義：第一欄房間名稱固定，其餘日期欄平均分配
+  // 用 HTML table，房間欄固定，日期欄固定寬讓手機可滑動
+  let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:${88 + daysInMonth * 32}px;">`;
   html+=`<colgroup><col style="width:88px;">`;
-  for(let i=0;i<daysInMonth;i++) html+=`<col>`;
+  for(let i=0;i<daysInMonth;i++) html+=`<col style="width:32px;">`;
   html+=`</colgroup>`;
 
   // 標題列
@@ -968,7 +1005,7 @@ function renderCal(){
       const isStart=bk&&bk.ci===ds;
       const bg=bk?color+'22':'transparent';
       const bl=isStart?`border-left:2px solid ${color};`:'';
-      html+=`<td style="padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:${bg};${bl}height:34px;" title="${bk?bk.nm+' ('+bk.ci+'→'+bk.co+')':''}">`;
+      html+=`<td style="padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:${bg};${bl}height:40px;" title="${bk?bk.nm+' ('+bk.ci+'→'+bk.co+')':''}">`;
       if(isStart&&bk){
         html+=`<div style="font-size:9px;color:${color};font-weight:600;padding:2px 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${bk.nm}</div>`;
       }
