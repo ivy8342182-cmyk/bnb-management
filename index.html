@@ -49,9 +49,11 @@
   .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px;text-align:center}
   #mob-nav{display:flex}
   #cal-hint{display:block!important}
-  table th:nth-child(3),table td:nth-child(3),
-  table th:nth-child(6),table td:nth-child(6),
-  table th:nth-child(7),table td:nth-child(7){display:none}
+  /* 讓所有表格可以左右滑動，不隱藏任何欄位 */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tw table{min-width:600px;}
+  /* 訂房管理表格較寬 */
+  #bk-tbody table, #s-bookings .tw table{min-width:750px;}
   .btn-sm{padding:8px 12px;font-size:13px}
   .modal{padding:20px;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:90vh;margin:0}
   .modal-ov.open{align-items:flex-end}
