@@ -604,7 +604,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="fg"><label>Email</label><input type="email" id="eg-em"></div>
     <div class="g2"><div class="fg"><label>身份證/護照號碼</label><input id="eg-id"></div>
     <div class="fg"><label>來源</label><select id="eg-src"><option>直接訂房</option><option>Airbnb</option><option>Booking.com</option><option>Agoda</option><option>Line 訂房</option><option>朋友介紹</option><option>其他</option></select></div></div>
-    <div class="fg"><label>備註</label><textarea id="eg-note" rows="2"></textarea></div>
+    <div class="g2"><div class="fg"><label>備註</label><textarea id="eg-note" rows="2"></textarea></div><div class="fg"><label>手動加計次數</label><input type="number" id="eg-stays" min="0" placeholder="0"><div style="font-size:11px;color:var(--txt3);margin-top:4px;">加上自動統計的退房次數</div></div></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-guest')">取消</button><button class="btn btn-p" onclick="saveGuest()">儲存</button></div>
   </div>
 </div>
@@ -1359,7 +1359,27 @@ function renderGuests(){
   const data=q?guests.filter(g=>g.nm.toLowerCase().includes(q)||(g.ph&&g.ph.includes(q))||(g.em&&g.em.toLowerCase().includes(q))):guests;
   const tb=$('g-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:28px;">無顧客資料</td></tr>';return}
-  tb.innerHTML=data.map(g=>`<tr><td><strong>${g.nm}</strong></td><td>${g.ph||'—'}</td><td style="font-size:12px;">${g.em||'—'}</td><td style="font-size:12px;font-family:monospace;">${g.idn||'—'}</td><td><span class="tag" style="background:var(--orange-p);color:var(--orange-dk);">${g.src||'—'}</span></td><td style="text-align:center;">${g.stays||0}次</td><td style="font-size:12px;color:var(--txt3);">${g.note||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditGuest('${g.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delGuest('${g.id}')">刪除</button></td></tr>`).join('');
+  const bks=ld(K.bk)||[];
+  tb.innerHTML=data.map(g=>{
+    const autoCount=bks.filter(b=>b.nm===g.nm&&b.st==='checkedout').length;
+    const total=(g.stays||0)+autoCount;
+    return`<tr>
+      <td><strong>${g.nm}</strong></td>
+      <td>${g.ph||'—'}</td>
+      <td style="font-size:12px;">${g.em||'—'}</td>
+      <td style="font-size:12px;font-family:monospace;">${g.idn||'—'}</td>
+      <td><span class="tag" style="background:var(--orange-p);color:var(--orange-dk);">${g.src||'—'}</span></td>
+      <td style="text-align:center;">
+        <span style="font-weight:600;">${total}</span>次
+        ${autoCount>0?`<div style="font-size:10px;color:var(--txt3);">自動${autoCount}+手動${g.stays||0}</div>`:''}
+      </td>
+      <td style="font-size:12px;color:var(--txt3);">${g.note||'—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditGuest('${g.id}')">編輯</button>
+        <button class="btn btn-d btn-sm" onclick="delGuest('${g.id}')">刪除</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 function addGuest(){
   const nm=$v('gu-nm').trim();if(!nm)return alert('請填寫姓名');
@@ -1369,12 +1389,12 @@ function addGuest(){
 function openEditGuest(id){
   const g=ld(K.guests).find(x=>x.id===id);if(!g)return;
   editGID=id;$('eg-nm').value=g.nm;$('eg-ph').value=g.ph||'';$('eg-em').value=g.em||'';
-  $('eg-id').value=g.idn||'';Array.from($('eg-src').options).forEach(o=>o.selected=o.value===g.src);$('eg-note').value=g.note||'';
+  $('eg-id').value=g.idn||'';Array.from($('eg-src').options).forEach(o=>o.selected=o.value===g.src);$('eg-note').value=g.note||'';$('eg-stays').value=g.stays||0;
   openM('m-edit-guest');
 }
 function saveGuest(){
   const guests=ld(K.guests),i=guests.findIndex(g=>g.id===editGID);if(i<0)return;
-  guests[i]={...guests[i],nm:$v('eg-nm'),ph:$v('eg-ph'),em:$v('eg-em'),idn:$v('eg-id'),src:$v('eg-src'),note:$v('eg-note')};
+  guests[i]={...guests[i],nm:$v('eg-nm'),ph:$v('eg-ph'),em:$v('eg-em'),idn:$v('eg-id'),src:$v('eg-src'),note:$v('eg-note'),stays:parseInt($v('eg-stays'))||0};
   sv(K.guests,guests);closeM('m-edit-guest');renderGuests();
 }
 function delGuest(id){if(!confirm('確認刪除此顧客？'))return;sv(K.guests,ld(K.guests).filter(g=>g.id!==id));renderGuests();}
