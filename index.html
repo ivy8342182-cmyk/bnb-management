@@ -465,6 +465,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   </div>
 </div>
 
+<!-- Staff Management -->
+<div class="modal-ov" id="m-staff">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-hdr"><div class="modal-ttl">👷 管理清潔人員</div><button class="modal-x" onclick="closeM('m-staff')">✕</button></div>
+    <div id="staff-list" style="margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input id="new-staff" placeholder="輸入新人員姓名" style="flex:1;" onkeydown="if(event.key==='Enter')addStaff()">
+      <button class="btn btn-p" onclick="addStaff()">新增</button>
+    </div>
+    <div style="margin-top:16px;text-align:right;"><button class="btn btn-ghost" onclick="closeM('m-staff')">完成</button></div>
+  </div>
+</div>
+
 <!-- Edit Cleaning -->
 <div class="modal-ov" id="m-edit-cl">
   <div class="modal">
@@ -472,7 +485,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="ecl-dt"></div>
     <div class="fg"><label>房間</label><select id="ecl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="ecl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><label>負責人員</label><select id="ecl-st"><option>小美</option><option>小華</option><option>大明</option><option>待分配</option></select></div></div>
+    <div class="fg"><label>負責人員 <button type="button" onclick="openM('m-staff')" style="font-size:11px;color:var(--orange);background:none;border:none;cursor:pointer;padding:0 4px;">✏️ 管理人員</button></label><select id="ecl-st"></select></div></div>
     <div class="fg"><label>備註</label><textarea id="ecl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-cl')">取消</button><button class="btn btn-p" onclick="saveEditCL()">儲存</button></div>
   </div>
@@ -485,7 +498,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="cl-dt"></div>
     <div class="fg"><label>房間</label><select id="cl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="cl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><label>負責人員</label><select id="cl-st"><option>小美</option><option>小華</option><option>大明</option><option>待分配</option></select></div></div>
+    <div class="fg"><label>負責人員 <button type="button" onclick="openM('m-staff')" style="font-size:11px;color:var(--orange);background:none;border:none;cursor:pointer;padding:0 4px;">✏️ 管理人員</button></label><select id="cl-st"></select></div></div>
     <div class="fg"><label>備註</label><textarea id="cl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-cl')">取消</button><button class="btn btn-p" onclick="addCL()">新增任務</button></div>
   </div>
@@ -606,8 +619,8 @@ const db = firebase.firestore();
 // ══════════════════════════════════════════
 // 資料層：本機快取 + Firestore 同步
 // ══════════════════════════════════════════
-const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory'};
-const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null};
+const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory', staff:'staff'};
+const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null, staff:null};
 
 // 讀取本機快取
 const ld = k => DB[k] || [];
@@ -697,6 +710,7 @@ function getDefaultData(k) {
       {id:uid('G'),nm:'李美玲',ph:'0928-765-432',em:'li@example.com',idn:'B234567890',src:'Airbnb',note:'蜜月旅行',stays:1},
       {id:uid('G'),nm:'陳家豪',ph:'0966-111-222',em:'chen@example.com',idn:'C345678901',src:'Booking.com',note:'帶小孩，需嬰兒床',stays:2},
     ],
+    staff: ['小美','小華','大明','待分配'],
     inventory: [
       {id:uid('I'),nm:'洗髮精',cat:'備品',stk:3,unit:'瓶',min:10},
       {id:uid('I'),nm:'沐浴乳',cat:'備品',stk:5,unit:'瓶',min:10},
@@ -718,45 +732,41 @@ function getDefaultData(k) {
 // ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
-const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory'];
-let loadedCount = 0;
+const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
+let loadedKeys = new Set();
 let appReady = false;
-let pendingWrites = {};  // 追蹤我們自己觸發的寫入
+
+function startApp(){
+  if(appReady) return;
+  appReady = true;
+  const ov = document.getElementById('load-ov');
+  if(ov){ ov.classList.add('hide'); setTimeout(()=>{ if(ov.parentNode)ov.remove(); },600); }
+  initDate(); setupMonths(); renderDash();
+  const inv = DB.inventory||[];
+  if(inv.some(i=>i.stk<=i.min)){ const d=$('inv-dot');if(d)d.style.display='block'; }
+}
 
 function startListeners() {
-  COL_KEYS.forEach(k => {
-    db.collection('bnb').doc(k).onSnapshot({ includeMetadataChanges: true }, snap => {
-      const isLocalWrite = snap.metadata.hasPendingWrites;
+  // 10秒後強制啟動，避免 Firebase 連線失敗卡住
+  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 10000);
 
+  COL_KEYS.forEach(k => {
+    db.collection('bnb').doc(k).onSnapshot(snap => {
       if (snap.exists) {
-        // 只在非本機寫入時才更新 DB（避免蓋掉剛存的資料）
-        if (!isLocalWrite) {
-          DB[k] = snap.data().data || [];
-        }
+        DB[k] = snap.data().data || [];
       } else {
         const def = getDefaultData(k);
         DB[k] = def;
         db.collection('bnb').doc(k).set({ data: def });
       }
-
-      loadedCount++;
-      if (!appReady && loadedCount >= COL_KEYS.length) {
-        appReady = true;
-        const ov = document.getElementById('load-ov');
-        if (ov) { ov.classList.add('hide'); setTimeout(()=>ov.remove(), 600); }
-        initDate();
-        setupMonths();
-        renderDash();
-        const inv = DB.inventory || [];
-        if (inv.some(i=>i.stk<=i.min)) { const d=$('inv-dot'); if(d) d.style.display='block'; }
-      }
-      // 只在非本機寫入的更新時才重新 render（本機寫入已在各 function 裡 render 過了）
-      if (appReady && !isLocalWrite) {
-        renderSec(curSec);
-      }
+      loadedKeys.add(k);
+      if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
+      if(appReady) renderSec(curSec);
     }, err => {
-      console.error('Firestore error:', err);
+      console.error('Firestore error:', k, err);
       setSyncError();
+      loadedKeys.add(k); // 就算失敗也標記為已處理
+      if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
     });
   });
 }
@@ -1208,11 +1218,52 @@ function saveEditFin(){
 // ══════════════════════════════════════════
 // CLEANING
 // ══════════════════════════════════════════
-function openCleanModal(){
-  $('cl-dt').value=today();
-  $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');
-  openM('m-add-cl');
+// ── 人員管理
+function getStaff(){ return ld(K.staff)||['待分配']; }
+function staffOptions(selectedVal=''){
+  return getStaff().map(s=>`<option${s===selectedVal?' selected':''}>${s}</option>`).join('');
 }
+function renderStaffList(){
+  const staff=getStaff();
+  $('staff-list').innerHTML=staff.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+      ${s!=='待分配'?`
+        <input id="es-${i}" value="${s}" style="flex:1;font-size:14px;padding:6px 10px;" onkeydown="if(event.key==='Enter')saveStaff(${i})">
+        <button class="btn btn-p btn-sm" onclick="saveStaff(${i})">改</button>
+        <button class="btn btn-d btn-sm" onclick="deleteStaff(${i})">刪</button>
+      `:`<span style="flex:1;font-size:14px;color:var(--txt2);">${s}</span><span style="font-size:11px;color:var(--txt3);">預設</span>`}
+    </div>`).join('') || '<div style="color:var(--txt3);padding:12px;text-align:center;">尚未新增人員</div>';
+}
+function addStaff(){
+  const nm=$v('new-staff').trim();
+  if(!nm)return;
+  const staff=getStaff();
+  if(staff.includes(nm))return alert('此人員已存在');
+  const idx=staff.indexOf('待分配');
+  if(idx>=0)staff.splice(idx,0,nm);else staff.push(nm);
+  sv(K.staff,staff);
+  $('new-staff').value='';
+  renderStaffList();refreshStaffSelects();showToast('✅ 已新增 '+nm);
+}
+function saveStaff(i){
+  const staff=getStaff(),old=staff[i],newName=$('es-'+i)?.value.trim();
+  if(!newName)return;
+  staff[i]=newName;sv(K.staff,staff);
+  const cl=ld(K.cl)||[];cl.forEach(c=>{if(c.st===old)c.st=newName;});sv(K.cl,cl);
+  renderStaffList();refreshStaffSelects();showToast('✅ 已更新');
+}
+function deleteStaff(i){
+  const staff=getStaff();if(!confirm(`確認刪除「${staff[i]}」？`))return;
+  staff.splice(i,1);sv(K.staff,staff);
+  renderStaffList();refreshStaffSelects();
+}
+function refreshStaffSelects(){
+  const cl=$('cl-st'),ecl=$('ecl-st');
+  if(cl)cl.innerHTML=staffOptions(cl.value);
+  if(ecl)ecl.innerHTML=staffOptions(ecl.value);
+}
+
+function openCleanModal(){\n  $('cl-dt').value=today();\n  $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');\n  $('cl-st').innerHTML=staffOptions();\n  openM('m-add-cl');\n}
 function renderCL(){
   const cl=ld(K.cl),t=today();
   const td=cl.filter(c=>c.dt===t);
@@ -1234,7 +1285,7 @@ function openEditCL(id){
   $('ecl-rm').innerHTML=rooms.map(r=>`<option value="${r.id}" data-nm="${r.name}"${r.id===c.rid?' selected':''}>${r.name}</option>`).join('');
   $('ecl-dt').value=c.dt;
   $('ecl-tp').value=c.tp;
-  $('ecl-st').value=c.st;
+  $('ecl-st').innerHTML=staffOptions(c.st);
   $('ecl-note').value=c.note||'';
   openM('m-edit-cl');
 }
@@ -1329,6 +1380,7 @@ const _openM=openM;
 window.openM=function(id){
   if(id==='m-add-bk')setupBKModal();
   if(id==='m-line')openLINE();
+  if(id==='m-staff')renderStaffList();
   _openM(id);
 };
 
