@@ -196,6 +196,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid var(--border);">
+    <div style="margin-bottom:10px;">
+      <button onclick="exportBackup()" class="btn btn-o btn-sm" style="width:100%;justify-content:center;font-size:12px;">⬇ 匯出 Excel 備份</button>
+    </div>
     <div style="font-size:11px;color:var(--txt3);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
   </div>
 </aside>
@@ -1454,6 +1457,62 @@ window.openM=function(id){
   if(id==='m-staff')renderStaffList();
   _openM(id);
 };
+
+// ══════════════════════════════════════════
+// 備份與還原
+// ══════════════════════════════════════════
+function exportBackup(){
+  showToast('準備匯出中…');
+  if(typeof XLSX !== 'undefined'){ doExportExcel(); return; }
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload=()=>doExportExcel();
+  s.onerror=()=>alert('❌ 無法載入 Excel 元件，請確認網路連線');
+  document.head.appendChild(s);
+}
+
+function doExportExcel(){
+  const wb=XLSX.utils.book_new();
+  const d=new Date();
+  const ds=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',cancelled:'已取消'};
+  const rooms=DB.rooms||[];
+
+  // 訂房記錄
+  const bks=(DB.bookings||[]).map(b=>{
+    const r=rooms.find(x=>x.id===b.rid);
+    return{'訂單編號':b.id,'房間':r?r.name:'','客人姓名':b.nm,'電話':b.ph||'','入住日期':b.ci,'退房日期':b.co,'人數':b.g,'總金額':b.amt,'訂金':b.dep,'來源':b.src||'','狀態':BSLBL[b.st]||b.st,'備註':b.note||''};
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(bks.length?bks:[{'訂單編號':'（無資料）'}]),'訂房記錄');
+
+  // 帳務記錄
+  const fin=(DB.finance||[]).map(f=>({'日期':f.dt,'類型':f.tp==='income'?'收入':'支出','類別':f.cat||'','說明':f.desc,'金額':f.amt,'備註':f.note||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(fin.length?fin:[{'日期':'（無資料）'}]),'帳務記錄');
+
+  // 顧客資料
+  const guests=(DB.guests||[]).map(g=>({'姓名':g.nm,'電話':g.ph||'','Email':g.em||'','身份證/護照':g.idn||'','來源':g.src||'','住宿次數':g.stays||0,'備註':g.note||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(guests.length?guests:[{'姓名':'（無資料）'}]),'顧客資料');
+
+  // 清潔排班
+  const cl=(DB.cleaning||[]).map(c=>({'日期':c.dt,'房間':c.rnm,'清潔類型':c.tp,'負責人員':Array.isArray(c.st)?c.st.join('、'):c.st||'','狀態':c.done?'已完成':'待清潔','備註':c.note||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(cl.length?cl:[{'日期':'（無資料）'}]),'清潔排班');
+
+  // 備品庫存
+  const inv=(DB.inventory||[]).map(i=>({'品項':i.nm,'類別':i.cat,'庫存':i.stk,'單位':i.unit,'警戒線':i.min}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(inv.length?inv:[{'品項':'（無資料）'}]),'備品庫存');
+
+  // 房間資料
+  const rms=rooms.map(r=>({'房間名稱':r.name,'編號':r.num,'房型':r.type,'人數':r.cap,'定價':r.price,'備註':r.note||''}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rms.length?rms:[{'房間名稱':'（無資料）'}]),'房間資料');
+
+  XLSX.writeFile(wb,`橋見民宿備份_${ds}.xlsx`);
+  showToast('✅ Excel 備份已下載！');
+}
+
+function importBackup(event){
+  alert('目前備份功能僅支援匯出 Excel。');
+  event.target.value='';
+}
 
 // 啟動 Firebase 監聽
 startListeners();
