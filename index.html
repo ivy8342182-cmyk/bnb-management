@@ -761,11 +761,15 @@ function startListeners() {
   COL_KEYS.forEach(k => {
     db.collection('bnb').doc(k).onSnapshot(snap => {
       if (snap.exists) {
+        // 文件存在：更新本機資料
         DB[k] = snap.data().data || [];
-      } else {
+      } else if (!snap.metadata.fromCache) {
+        // 文件真的不存在（非快取、非網路失敗）：才寫入預設資料
+        // 加上保護：只在確認連線正常時才初始化
         const def = getDefaultData(k);
         DB[k] = def;
-        db.collection('bnb').doc(k).set({ data: def });
+        db.collection('bnb').doc(k).set({ data: def })
+          .catch(e => console.error('初始化失敗:', k, e));
       }
       loadedKeys.add(k);
       if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
@@ -773,7 +777,8 @@ function startListeners() {
     }, err => {
       console.error('Firestore error:', k, err);
       setSyncError();
-      loadedKeys.add(k); // 就算失敗也標記為已處理
+      // 連線失敗：不動 DB，只標記已處理
+      loadedKeys.add(k);
       if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
     });
   });
