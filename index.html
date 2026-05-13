@@ -637,6 +637,11 @@ const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null,
 const ld = k => DB[k] || [];
 // 寫入 Firestore（非同步）
 function sv(k, data) {
+  // 安全防護：如果 Firebase 資料還未載入，不允許寫入（避免覆蓋雲端資料）
+  if(!appReady && !loadedKeys.has(k)) {
+    console.warn('sv() blocked: Firebase not ready for', k);
+    return;
+  }
   DB[k] = data;
   setSyncing(true);
   const clean = JSON.parse(JSON.stringify(data));
