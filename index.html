@@ -196,8 +196,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid var(--border);">
-    <div style="margin-bottom:10px;">
-      <button onclick="exportBackup()" class="btn btn-o btn-sm" style="width:100%;justify-content:center;font-size:12px;">⬇ 匯出 Excel 備份</button>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button onclick="exportBackup()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;">⬇ Excel</button>
+      <button onclick="$('import-file').click()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;">⬆ 還原 JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importBackup(event)">
     </div>
     <div style="font-size:11px;color:var(--txt3);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
   </div>
@@ -1511,8 +1513,58 @@ function doExportExcel(){
 }
 
 function importBackup(event){
-  alert('目前備份功能僅支援匯出 Excel。');
-  event.target.value='';
+  const file = event.target.files[0];
+  if(!file){ event.target.value=''; return; }
+  if(!file.name.endsWith('.json')){ alert('請選擇 .json 格式的備份檔'); event.target.value=''; return; }
+
+  if(!confirm(`確認從「${file.name}」還原資料？\n⚠️ 這會覆蓋目前所有雲端資料，無法復原。\n\n按「確定」繼續。`)){
+    event.target.value=''; return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const backup = JSON.parse(e.target.result);
+
+      // 支援兩種格式：{ data: {...} } 或直接 { rooms: [], bookings: [], ... }
+      const src = backup.data || backup;
+
+      const keyMap = {
+        rooms:'rooms', bookings:'bookings', finance:'finance',
+        cleaning:'cleaning', guests:'guests', inventory:'inventory', staff:'staff',
+        // 舊版 key 名稱相容
+        bnb_rooms:'rooms', bnb_bk:'bookings', bnb_fin:'finance',
+        bnb_cl:'cleaning', bnb_guests:'guests', bnb_inv:'inventory'
+      };
+
+      let count = 0;
+      const promises = [];
+
+      Object.keys(src).forEach(srcKey => {
+        const targetKey = keyMap[srcKey];
+        if(!targetKey || !Array.isArray(src[srcKey])) return;
+        const data = src[srcKey];
+        DB[targetKey] = data;
+        promises.push(
+          db.collection('bnb').doc(targetKey).set({ data: data })
+            .then(() => count++)
+            .catch(e => console.error('還原失敗:', targetKey, e))
+        );
+      });
+
+      Promise.all(promises).then(() => {
+        renderSec(curSec);
+        renderDash();
+        showToast(`✅ 還原成功！共還原 ${count} 項資料`);
+        if(backup.exported) showToast(`備份時間：${backup.exported}`);
+      });
+
+    } catch(err) {
+      alert('❌ 備份檔讀取失敗：' + err.message + '\n請確認是正確的 JSON 備份檔。');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file, 'utf-8');
 }
 
 // 啟動 Firebase 監聽
