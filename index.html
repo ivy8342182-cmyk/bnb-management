@@ -758,21 +758,17 @@ function startApp(){
 }
 
 function startListeners() {
-  // 3秒後強制啟動，避免 Firebase 連線失敗卡住
-  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 3000);
+  // 8秒後強制啟動，避免網路問題卡住
+  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 8000);
 
   COL_KEYS.forEach(k => {
     db.collection('bnb').doc(k).onSnapshot(snap => {
       if (snap.exists) {
-        // 文件存在：更新本機資料
+        // 資料存在：讀取進來
         DB[k] = snap.data().data || [];
-      } else if (!snap.metadata.fromCache) {
-        // 文件真的不存在（非快取、非網路失敗）：才寫入預設資料
-        // 加上保護：只在確認連線正常時才初始化
-        const def = getDefaultData(k);
-        DB[k] = def;
-        db.collection('bnb').doc(k).set({ data: def })
-          .catch(e => console.error('初始化失敗:', k, e));
+      } else {
+        // 資料不存在：只設空陣列，絕不自動寫入任何預設資料
+        if(DB[k] === null) DB[k] = [];
       }
       loadedKeys.add(k);
       if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
@@ -780,7 +776,7 @@ function startListeners() {
     }, err => {
       console.error('Firestore error:', k, err);
       setSyncError();
-      // 連線失敗：不動 DB，只標記已處理
+      if(DB[k] === null) DB[k] = [];
       loadedKeys.add(k);
       if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
     });
