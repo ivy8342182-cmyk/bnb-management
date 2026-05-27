@@ -219,7 +219,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   <div class="pg-header">
     <h2 id="pg-title">總覽儀表板</h2>
     <div style="display:flex;align-items:center;gap:14px;">
-      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div>
+      <div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="openM('m-diag')" title="點擊查看連線診斷"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div>
       <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
@@ -556,6 +556,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 </div>
 
 
+<!-- Diagnostic Modal -->
+<div class="modal-ov" id="m-diag">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-hdr">
+      <div class="modal-ttl">🔍 Firebase 連線診斷</div>
+      <button class="modal-x" onclick="closeM('m-diag')">✕</button>
+    </div>
+    <div id="diag-content" style="font-size:13px;line-height:2;">
+      <div style="text-align:center;padding:20px;color:var(--txt3);">檢測中…</div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="runDiag()">🔄 重新檢測</button>
+      <button class="btn btn-ghost" onclick="closeM('m-diag')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- Edit Booking -->
 <div class="modal-ov" id="m-edit-bk">
   <div class="modal">
@@ -765,6 +782,33 @@ function startApp(){
   if(inv.some(i=>i.stk<=i.min)){ const d=$('inv-dot');if(d)d.style.display='block'; }
 }
 
+
+// ── 資料修復：補全缺少 _uid 的訂單，修復重複 BK 編號
+function migrateBookings(){
+  const bks = DB.bookings || [];
+  let changed = false;
+  const seenIds = {};
+  bks.forEach((b, i) => {
+    // 每筆訂單加上唯一內部識別碼
+    if(!b._uid){
+      b._uid = 'uid_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2,6);
+      changed = true;
+    }
+    // 修復重複的 BK 編號
+    if(seenIds[b.id]){
+      const nums = bks.map(x=>parseInt(x.id.replace('BK',''))||0);
+      const next = Math.max(...nums) + 1;
+      b.id = 'BK' + String(next).padStart(3,'0');
+      changed = true;
+    }
+    seenIds[b.id] = true;
+  });
+  if(changed){
+    sv('bookings', bks);
+    console.log('資料修復完成');
+  }
+}
+
 function startListeners() {
   // 8秒後強制啟動，避免網路問題卡住
   setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 8000);
@@ -779,7 +823,7 @@ function startListeners() {
         if(DB[k] === null) DB[k] = [];
       }
       loadedKeys.add(k);
-      if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
+      if(!appReady && loadedKeys.size >= COL_KEYS.length){ startApp(); setTimeout(migrateBookings,500); }
       if(appReady) renderSec(curSec);
     }, err => {
       console.error('Firestore error:', k, err);
@@ -857,9 +901,9 @@ function renderDash(){
   const d=new Date();const dy=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   $('today-disp').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${dy[d.getDay()]}`;
   const ciL=$('d-ci-list');
-  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
+  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
   const coL=$('d-co-list');
-  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
+  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
   const low=inv.filter(i=>i.stk<=i.min);
   const ld2=$('d-low');
   if(low.length){ld2.style.display='block';$('d-low-items').innerHTML=low.map(i=>`<div style="padding:5px 0;font-size:13px;">⚠️ <strong>${i.nm}</strong>：剩 ${i.stk} ${i.unit}（需 ${i.min} ${i.unit}）</div>`).join('')}
@@ -959,11 +1003,11 @@ function renderBK(f){
       <td style="font-size:14px;">${fmtM(b.amt)}<br><span style="font-size:11px;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td>
       <td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td>
       <td style="white-space:nowrap;vertical-align:middle;padding:8px 10px;">
-        <button class="btn btn-o btn-sm" onclick="openEditBK('${b.id}')">編輯</button>
-        ${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b.id}')">入住</button>`:''}
-        ${b.st==='checkedin'?`<button class="btn btn-o btn-sm" onclick="checkOut('${b.id}')">退房</button>`:''}
-        ${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b.id}')">取消</button>`:''}
-        <button class="btn btn-d btn-sm" onclick="deleteBK('${b.id}')">刪除</button>
+        <button class="btn btn-o btn-sm" onclick="openEditBK('${b._uid||b.id}')">編輯</button>
+        ${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">入住</button>`:''}
+        ${b.st==='checkedin'?`<button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">退房</button>`:''}
+        ${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b._uid||b.id}')">取消</button>`:''}
+        <button class="btn btn-d btn-sm" onclick="deleteBK('${b._uid||b.id}')">刪除</button>
       </td>
     </tr>`;
   }).join('');
@@ -971,9 +1015,9 @@ function renderBK(f){
 
 // ── 編輯訂房
 let editBKID=null;
-function openEditBK(id){
-  const b=ld(K.bk).find(x=>x.id===id),rooms=ld(K.rooms);if(!b)return;
-  editBKID=id;
+function openEditBK(uid){
+  const b=ld(K.bk).find(x=>x._uid===uid||x.id===uid),rooms=ld(K.rooms);if(!b)return;
+  editBKID=b._uid||b.id;
   $('ebk-rm').innerHTML=rooms.map(r=>`<option value="${r.id}"${r.id===b.rid?' selected':''}>${r.name}</option>`).join('');
   $('ebk-nm').value=b.nm;$('ebk-ph').value=b.ph||'';$('ebk-ci').value=b.ci;$('ebk-co').value=b.co;
   $('ebk-g').value=b.g;$('ebk-dp').value=b.dep;$('ebk-amt').value=b.amt;
@@ -983,7 +1027,7 @@ function openEditBK(id){
   openM('m-edit-bk');
 }
 function saveBK(){
-  const bks=ld(K.bk),i=bks.findIndex(b=>b.id===editBKID);if(i<0)return;
+  const bks=ld(K.bk),i=bks.findIndex(b=>(b._uid===editBKID||b.id===editBKID));if(i<0)return;
   bks[i]={...bks[i],rid:+$v('ebk-rm'),nm:$v('ebk-nm'),ph:$v('ebk-ph'),ci:$v('ebk-ci'),co:$v('ebk-co'),g:+$v('ebk-g'),dep:+$v('ebk-dp'),amt:+$v('ebk-amt'),src:$v('ebk-src'),st:$v('ebk-st'),note:$v('ebk-note')};
   sv(K.bk,bks);closeM('m-edit-bk');syncBK();
 }
@@ -1125,18 +1169,19 @@ function addBK(){
   const existingNums = bks.map(b=>parseInt(b.id.replace('BK',''))||0);
   const nextNum = existingNums.length ? Math.max(...existingNums)+1 : 1;
   const newId='BK'+String(nextNum).padStart(3,'0');
-  bks.push({id:newId,rid,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
+  const newUid='uid_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  bks.push({id:newId,_uid:newUid,rid,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
   sv(K.bk,bks);closeM('m-add-bk');syncBK();
 }
 function checkIn(id){
-  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
+  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>(x._uid||x.id)===id);if(!b)return;
   b.st='checkedin';
   const ri=rooms.findIndex(r=>r.id===b.rid);if(ri>=0)rooms[ri].status='occupied';
   sv(K.bk,bks);sv(K.rooms,rooms);syncBK();renderRooms();
 }
 function checkOut(id){
   if(!confirm('確認辦理退房？'))return;
-  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
+  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>(x._uid||x.id)===id);if(!b)return;
   b.st='checkedout';
   const ri=rooms.findIndex(r=>r.id===b.rid);
   const rm=rooms[ri];
@@ -1152,7 +1197,7 @@ function cancelBK(id){
 }
 function deleteBK(id){
   if(!confirm('確認永久刪除此訂房？此操作無法復原。'))return;
-  sv(K.bk,ld(K.bk).filter(b=>b.id!==id));syncBK();
+  sv(K.bk,ld(K.bk).filter(b=>(b._uid||b.id)!==id));syncBK();
 }
 
 // ══════════════════════════════════════════
@@ -1584,10 +1629,76 @@ function importBackup(event){
   reader.readAsText(file, 'utf-8');
 }
 
+// ── 連線診斷
+async function runDiag(){
+  const el=$('diag-content');if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);">🔄 檢測中…</div>';
+  const results=[];
+  const ok =(msg)=>`<div style="color:#1A9E52;padding:2px 0;">✅ ${msg}</div>`;
+  const err=(msg)=>`<div style="color:#C0392B;padding:2px 0;">❌ ${msg}</div>`;
+  const wrn=(msg)=>`<div style="color:#D4680A;padding:2px 0;">⚠️ ${msg}</div>`;
+  const inf=(msg)=>`<div style="color:var(--txt2);padding:2px 0;">ℹ️ ${msg}</div>`;
+  const hdr=(msg)=>`<div style="font-weight:600;margin:12px 0 4px;border-bottom:1px solid var(--border);padding-bottom:4px;">${msg}</div>`;
+
+  results.push(hdr('📡 網路與連線'));
+  results.push(navigator.onLine?ok('網路連線正常'):err('網路離線'));
+
+  try{
+    if(typeof firebase!=='undefined'&&firebase.app()){
+      results.push(ok('Firebase SDK 載入成功'));
+      results.push(inf('專案：'+firebase.app().options.projectId));
+    }
+  }catch(e){results.push(err('Firebase SDK 載入失敗'));}
+
+  results.push(hdr('🗄️ Firestore 資料庫'));
+  try{
+    const t0=Date.now();
+    const snap=await db.collection('bnb').doc('rooms').get();
+    const ms=Date.now()-t0;
+    if(snap.exists){
+      results.push(ok(`讀取成功（${ms}ms）`));
+      results.push(inf('房間資料：'+(snap.data().data||[]).length+' 筆'));
+    }else{results.push(wrn('連線正常，但尚無資料'));}
+  }catch(e){
+    results.push(e.code==='permission-denied'?err('權限被拒！請更新 Firebase 安全規則為 allow read, write: if true'):err('讀取失敗：'+e.message));
+  }
+  try{
+    const t0=Date.now();
+    await db.collection('bnb_test').doc('ping').set({t:Date.now()});
+    await db.collection('bnb_test').doc('ping').delete();
+    results.push(ok('寫入成功（'+(Date.now()-t0)+'ms）'));
+  }catch(e){
+    results.push(e.code==='permission-denied'?err('寫入被拒！請更新安全規則'):wrn('寫入測試失敗'));
+  }
+
+  results.push(hdr('📊 資料載入狀況'));
+  COL_KEYS.forEach(k=>{
+    const d=DB[k];
+    if(d===null)results.push(err(k+'：尚未載入'));
+    else if(d.length===0)results.push(wrn(k+'：空資料（0 筆）'));
+    else results.push(ok(k+'：'+d.length+' 筆'));
+  });
+
+  results.push(hdr('📱 裝置資訊'));
+  const ua=navigator.userAgent;
+  const br=ua.includes('Safari')&&!ua.includes('Chrome')?'Safari':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':'其他';
+  results.push(inf('瀏覽器：'+br));
+  results.push(inf('系統時間：'+new Date().toLocaleString('zh-TW')));
+  results.push(inf('網頁來源：'+location.hostname));
+  el.innerHTML=results.join('');
+}
+
 // 啟動 Firebase 監聽
 startListeners();
 // 每天檢查 LINE 通知
 setTimeout(checkDailyNotify, 3000);
+
+// 開啟診斷 modal 時自動執行
+const _baseOpenM = window.openM;
+window.openM = function(id){
+  _baseOpenM(id);
+  if(id==='m-diag') setTimeout(runDiag, 150);
+};
 </script>
 
 <script>
