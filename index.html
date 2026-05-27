@@ -168,6 +168,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 }
 @media(max-width:480px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.gr{grid-template-columns:1fr 1fr}}
 </style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "0bb4eaaf-0992-4520-8541-b490ae49b9b5",
+      notifyButton: { enable: false },
+      promptOptions: {
+        slidedown: {
+          prompts: [{
+            type: "push",
+            autoPrompt: false,
+            text: {
+              actionMessage: "開啟通知，每天早上提醒今日入住與退房",
+              acceptButton: "開啟通知",
+              cancelButton: "稍後再說"
+            }
+          }]
+        }
+      }
+    });
+  });
+</script>
 </head>
 <body>
 
@@ -196,6 +219,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid var(--border);">
+    <div style="margin-bottom:8px;">
+      <button onclick="requestNotificationPermission()" class="btn btn-o btn-sm" style="width:100%;justify-content:center;font-size:12px;" id="notif-btn">🔔 開啟入住通知</button>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <button onclick="exportBackupJSON()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;">⬇ JSON</button>
       <button onclick="exportBackup()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;">⬇ Excel</button>
@@ -778,6 +804,8 @@ function startApp(){
   const ov = document.getElementById('load-ov');
   if(ov){ ov.classList.add('hide'); setTimeout(()=>{ if(ov.parentNode)ov.remove(); },600); }
   initDate(); setupMonths(); renderDash();
+  // 初始化通知
+  setTimeout(()=>{ requestNotificationPermission(); checkAndScheduleNotifications(); }, 2000);
   const inv = DB.inventory||[];
   if(inv.some(i=>i.stk<=i.min)){ const d=$('inv-dot');if(d)d.style.display='block'; }
 }
@@ -1686,6 +1714,85 @@ async function runDiag(){
   results.push(inf('系統時間：'+new Date().toLocaleString('zh-TW')));
   results.push(inf('網頁來源：'+location.hostname));
   el.innerHTML=results.join('');
+}
+
+
+// ── OneSignal 推播通知
+function initOneSignalPrompt(){
+  // 3秒後詢問是否開啟通知（不打擾載入）
+  setTimeout(()=>{
+    if(typeof OneSignal !== 'undefined'){
+      OneSignal.Slidedown.promptPush();
+    }
+  }, 3000);
+}
+
+async function sendPushNotification(title, message){
+  // 透過 OneSignal REST API 傳送推播（需要 REST API Key）
+  // 這裡改用本地排程檢查方式
+  console.log('Push:', title, message);
+}
+
+function checkAndScheduleNotifications(){
+  const t = today();
+  const lastCheck = localStorage.getItem('notif_last_check');
+  if(lastCheck === t) return; // 今天已檢查過
+
+  const now = new Date();
+  const hour = now.getHours();
+  if(hour < 8) return; // 早上8點前不執行
+
+  localStorage.setItem('notif_last_check', t);
+
+  const bks = DB.bookings || [];
+  const rooms = DB.rooms || [];
+  const activeBks = bks.filter(b => b.st !== 'cancelled');
+
+  const checkinToday = activeBks.filter(b => b.ci === t);
+  const checkoutToday = activeBks.filter(b => b.co === t);
+
+  // 入住前3天
+  const in3days = addD(t, 3);
+  const checkinIn3 = activeBks.filter(b => b.ci === in3days);
+
+  // 發送瀏覽器通知
+  if(Notification.permission === 'granted'){
+    checkinIn3.forEach(b => {
+      const r = rooms.find(x => x.id === b.rid);
+      new Notification('🏠 橋見幸福民宿 - 入住提醒', {
+        body: `${b.nm} 將於3天後（${fmtDF(b.ci)}）入住 ${r ? r.name : ''}，請提前準備`,
+        icon: '/favicon.ico',
+        tag: 'checkin3_' + (b._uid || b.id)
+      });
+    });
+    checkinToday.forEach(b => {
+      const r = rooms.find(x => x.id === b.rid);
+      new Notification('📥 橋見幸福民宿 - 今日入住', {
+        body: `${b.nm}，${r ? r.name : ''}，${b.g}人`,
+        icon: '/favicon.ico',
+        tag: 'checkin_' + (b._uid || b.id)
+      });
+    });
+    checkoutToday.forEach(b => {
+      const r = rooms.find(x => x.id === b.rid);
+      new Notification('📤 橋見幸福民宿 - 今日退房', {
+        body: `${b.nm}，${r ? r.name : ''}，${fmtM(b.amt)}`,
+        icon: '/favicon.ico',
+        tag: 'checkout_' + (b._uid || b.id)
+      });
+    });
+  }
+}
+
+function requestNotificationPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission().then(p => {
+      if(p === 'granted'){
+        showToast('✅ 通知已開啟！每天早上8點後開啟網站將自動提醒');
+      }
+    });
+  }
 }
 
 // 啟動 Firebase 監聽
