@@ -1121,7 +1121,10 @@ function addBK(){
   if(!nm||!ci||!co||!rid)return alert('請填寫必要資料');
   if(co<=ci)return alert('退房日期需晚於入住日期');
   const bks=ld(K.bk);
-  const newId='BK'+String(bks.length+1).padStart(3,'0');
+  // 用時間戳確保 ID 不重複（不能用 bks.length，刪除後會重複）
+  const existingNums = bks.map(b=>parseInt(b.id.replace('BK',''))||0);
+  const nextNum = existingNums.length ? Math.max(...existingNums)+1 : 1;
+  const newId='BK'+String(nextNum).padStart(3,'0');
   bks.push({id:newId,rid,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
   sv(K.bk,bks);closeM('m-add-bk');syncBK();
 }
