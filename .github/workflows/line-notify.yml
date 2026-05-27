@@ -1,0 +1,149 @@
+name: 橋見民宿每日LINE通知
+
+on:
+  schedule:
+    # 每天台灣時間早上 8:00（UTC 00:00）
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允許手動觸發測試
+
+jobs:
+  send-line-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 檢查訂房並發送LINE通知
+        env:
+          LINE_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
+          FIREBASE_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          node << 'EOF'
+          const https = require('https');
+
+          // 取得今天和3天後的日期（台灣時間）
+          const now = new Date();
+          const taiwanOffset = 8 * 60 * 60 * 1000;
+          const taiwanNow = new Date(now.getTime() + taiwanOffset);
+          
+          const fmt = (d) => d.toISOString().split('T')[0];
+          const today = fmt(taiwanNow);
+          const in3days = fmt(new Date(taiwanNow.getTime() + 3 * 24 * 60 * 60 * 1000));
+
+          // 從 Firestore REST API 讀取訂房資料
+          async function fetchData(collection) {
+            return new Promise((resolve, reject) => {
+              const url = `https://firestore.googleapis.com/v1/projects/${process.env.FIREBASE_PROJECT}/databases/(default)/documents/bnb/${collection}?key=${process.env.FIREBASE_API_KEY}`;
+              https.get(url, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                  try {
+                    const json = JSON.parse(data);
+                    if (json.fields && json.fields.data && json.fields.data.arrayValue) {
+                      const items = json.fields.data.arrayValue.values || [];
+                      resolve(items.map(item => {
+                        const obj = {};
+                        const fields = item.mapValue?.fields || {};
+                        Object.keys(fields).forEach(k => {
+                          const v = fields[k];
+                          obj[k] = v.stringValue ?? v.integerValue ?? v.booleanValue ?? v.doubleValue ?? '';
+                        });
+                        return obj;
+                      }));
+                    } else {
+                      resolve([]);
+                    }
+                  } catch(e) { resolve([]); }
+                });
+              }).on('error', reject);
+            });
+          }
+
+          // 發送LINE訊息
+          async function sendLine(message) {
+            return new Promise((resolve, reject) => {
+              const body = JSON.stringify({
+                to: process.env.LINE_GROUP_ID,
+                messages: [{ type: 'text', text: message }]
+              });
+              const options = {
+                hostname: 'api.line.me',
+                path: '/v2/bot/message/push',
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${process.env.LINE_TOKEN}`,
+                  'Content-Length': Buffer.byteLength(body)
+                }
+              };
+              const req = https.request(options, (res) => {
+                let data = '';
+                res.on('data', chunk => data += chunk);
+                res.on('end', () => {
+                  console.log('LINE回應:', res.statusCode, data);
+                  resolve(data);
+                });
+              });
+              req.on('error', reject);
+              req.write(body);
+              req.end();
+            });
+          }
+
+          async function main() {
+            const [bookings, rooms] = await Promise.all([
+              fetchData('bookings'),
+              fetchData('rooms')
+            ]);
+
+            const active = bookings.filter(b => b.st !== 'cancelled');
+            const getRoomName = (rid) => rooms.find(r => String(r.id) === String(rid))?.name || '';
+
+            const checkinToday = active.filter(b => b.ci === today);
+            const checkoutToday = active.filter(b => b.co === today && b.st === 'checkedin');
+            const checkinIn3 = active.filter(b => b.ci === in3days);
+
+            const messages = [];
+
+            // 入住前3天提醒
+            if (checkinIn3.length > 0) {
+              let msg = `🏠 【橋見幸福民宿】入住前3天提醒\n日期：${in3days}\n`;
+              checkinIn3.forEach(b => {
+                msg += `\n👤 ${b.nm}\n🛏 ${getRoomName(b.rid)}\n👥 ${b.g}人\n`;
+              });
+              msg += '\n請提前準備房間！';
+              messages.push(msg);
+            }
+
+            // 今日入住
+            if (checkinToday.length > 0) {
+              let msg = `📥 【橋見幸福民宿】今日入住（${today}）\n`;
+              checkinToday.forEach(b => {
+                msg += `\n👤 ${b.nm}\n🛏 ${getRoomName(b.rid)}\n👥 ${b.g}人\n📞 ${b.ph || '—'}\n`;
+              });
+              messages.push(msg);
+            }
+
+            // 今日退房
+            if (checkoutToday.length > 0) {
+              let msg = `📤 【橋見幸福民宿】今日退房（${today}）\n`;
+              checkoutToday.forEach(b => {
+                msg += `\n👤 ${b.nm}\n🛏 ${getRoomName(b.rid)}\n`;
+              });
+              messages.push(msg);
+            }
+
+            if (messages.length === 0) {
+              console.log('今日無入住/退房，不發送通知');
+              return;
+            }
+
+            for (const msg of messages) {
+              await sendLine(msg);
+              await new Promise(r => setTimeout(r, 500));
+            }
+            console.log('通知發送完成！');
+          }
+
+          main().catch(console.error);
+          EOF
