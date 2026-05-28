@@ -217,7 +217,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('cleaning')"><span class="nav-icon">🧹</span>清潔排班</div>
     <div class="nav-item" onclick="goTo('guests')"><span class="nav-icon">👥</span>顧客資料</div>
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
-    <div class="nav-item" onclick="goTo('notify')"><span class="nav-icon">🔔</span>通知設定</div>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid var(--border);">
     <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -425,48 +424,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
       </div>
     </div>
 
-    <!-- NOTIFY -->
-    <div class="section" id="s-notify">
-      <div class="sh-hdr" style="margin-bottom:20px;"><div class="sh-ttl">通知設定</div></div>
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-title" style="margin-bottom:16px;">🔔 瀏覽器推播通知</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);">
-          <div>
-            <div style="font-weight:500;font-size:14px;">通知狀態</div>
-            <div style="font-size:12px;color:var(--txt3);margin-top:3px;" id="notif-status-txt">檢查中…</div>
-          </div>
-          <div id="notif-status-badge"></div>
-        </div>
-        <div style="padding:14px 0;border-bottom:1px solid var(--border);">
-          <button class="btn btn-p" id="notif-toggle-btn" onclick="toggleNotification()" style="width:100%;justify-content:center;">開啟通知</button>
-        </div>
-        <div style="padding:14px 0;font-size:12px;color:var(--txt3);line-height:1.8;">
-          ⓘ 每台裝置需分別開啟。開啟後每天早上 8:00 後開啟網站，系統會自動提醒。
-        </div>
-      </div>
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-title" style="margin-bottom:16px;">⏰ 通知時機</div>
-        <div style="display:flex;flex-direction:column;">
-          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 0;border-bottom:1px solid var(--border);">
-            <div><div style="font-weight:500;font-size:14px;">📅 入住前 3 天</div><div style="font-size:12px;color:var(--txt3);">提醒提前準備房間</div></div>
-            <input type="checkbox" id="notif-3day" onchange="saveNotifSettings()" style="width:20px;height:20px;accent-color:var(--orange);cursor:pointer;">
-          </label>
-          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 0;border-bottom:1px solid var(--border);">
-            <div><div style="font-weight:500;font-size:14px;">📥 入住當天</div><div style="font-size:12px;color:var(--txt3);">今日入住提醒</div></div>
-            <input type="checkbox" id="notif-today-in" onchange="saveNotifSettings()" style="width:20px;height:20px;accent-color:var(--orange);cursor:pointer;">
-          </label>
-          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:14px 0;">
-            <div><div style="font-weight:500;font-size:14px;">📤 退房當天</div><div style="font-size:12px;color:var(--txt3);">今日退房提醒</div></div>
-            <input type="checkbox" id="notif-today-out" onchange="saveNotifSettings()" style="width:20px;height:20px;accent-color:var(--orange);cursor:pointer;">
-          </label>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title" style="margin-bottom:12px;">🧪 測試通知</div>
-        <div style="font-size:13px;color:var(--txt2);margin-bottom:14px;">點擊下方按鈕，測試通知是否正常運作</div>
-        <button class="btn btn-o" onclick="testNotification()" style="width:100%;justify-content:center;">發送測試通知</button>
-      </div>
-    </div>
 
   </div>
 </main>
@@ -918,7 +875,7 @@ const $v    = id => $(id)?.value||'';
 // ══════════════════════════════════════════
 // NAV
 // ══════════════════════════════════════════
-const TITLES={dashboard:'總覽儀表板',rooms:'房間狀態',bookings:'訂房管理',finance:'帳務記錄',cleaning:'清潔排班',guests:'顧客資料',inventory:'備品庫存',notify:'通知設定'};
+const TITLES={dashboard:'總覽儀表板',rooms:'房間狀態',bookings:'訂房管理',finance:'帳務記錄',cleaning:'清潔排班',guests:'顧客資料',inventory:'備品庫存'};
 let curSec='dashboard';
 function goTo(s){
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
@@ -939,8 +896,7 @@ function renderSec(s){
     finance:renderFin,
     cleaning:renderCL,
     guests:renderGuests,
-    inventory:()=>renderInv(curInvF),
-    notify:renderNotifyPage
+    inventory:()=>renderInv(curInvF)
   };
   fn[s]?.();
 }
