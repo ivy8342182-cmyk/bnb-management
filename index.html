@@ -1225,23 +1225,6 @@ async function runDiag(){
 }
 
 
-  // 3秒後詢問是否開啟通知（不打擾載入）
-  setTimeout(()=>{
-    }
-  }, 3000);
-}
-
-async function sendPushNotification(title, message){
-  // 這裡改用本地排程檢查方式
-  console.log('Push:', title, message);
-}
-
-}
-
-    });
-  }
-}
-
 // 啟動 Firebase 監聽
 startListeners();
 
