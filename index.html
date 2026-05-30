@@ -373,7 +373,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="cl-dt"></div>
     <div class="fg"><label>房間</label><select id="cl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="cl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><label>負責人員</label><select id="cl-st"><option>小美</option><option>小華</option><option>大明</option><option>待分配</option></select></div></div>
+    <div class="fg"><label>負責人員</label><select id="cl-st"></select></div></div>
     <div class="fg"><label>備註</label><textarea id="cl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-cl')">取消</button><button class="btn btn-p" onclick="addCL()">新增任務</button></div>
   </div>
@@ -449,7 +449,7 @@ const db = firebase.firestore();
 // 資料層：本機快取 + Firestore 同步
 // ══════════════════════════════════════════
 const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory'};
-const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null};
+const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null, staff:null};
 
 // 讀取本機快取
 const ld = k => DB[k] || [];
@@ -539,7 +539,7 @@ function getDefaultData(k) {
 // ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
-const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory'];
+const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
 
 function startListeners() {
   const loaded = new Set();
@@ -701,7 +701,7 @@ function renderBK(f){
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
-    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b.id}')">退房</button>`:''}${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b.id}')">取消</button>`:''}</td></tr>`;
+    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b.id}')">取消</button>`:''}</td></tr>`;
   }).join('');
 }
 function setupBKModal(){
@@ -786,6 +786,8 @@ function delFin(id){if(!confirm('確認刪除？'))return;sv(K.fin,ld(K.fin).fil
 function openCleanModal(){
   $('cl-dt').value=today();
   $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');
+  const staff=DB.staff&&DB.staff.length?DB.staff:['小美','小華','大明','待分配'];
+  $('cl-st').innerHTML=staff.map(s=>`<option>${s}</option>`).join('');
   openM('m-add-cl');
 }
 function renderCL(){
@@ -797,7 +799,7 @@ function renderCL(){
   const $up=$('cl-upcoming');
   $up.innerHTML=up.length?up.sort((a,b)=>a.dt.localeCompare(b.dt)).map(c=>`<div class="clean-task"><div style="width:38px;text-align:center;font-size:12px;color:var(--amber);font-weight:500;">${fmtD(c.dt)}<br><span style="font-size:10px;color:var(--txt3);">週${dayLbl(c.dt)}</span></div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div></div></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">近期無排班</div>';
   const all=[...cl].sort((a,b)=>b.dt.localeCompare(a.dt));
-  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
+  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditCL('${c.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
 }
 function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl)}}
 function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id))}
@@ -884,7 +886,118 @@ const _openM=openM;
 window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
 
 // 啟動 Firebase 監聽
+// ── 訂房編輯
+let editBKID = null;
+function openEditBK(id){
+  const bks=ld(K.bk), b=bks.find(x=>x.id===id);
+  if(!b) return;
+  editBKID = id;
+  $('ebk-nm').value = b.nm||'';
+  $('ebk-ph').value = b.ph||'';
+  $('ebk-rm').innerHTML = ld(K.rooms).map(r=>`<option value="${r.id}"${r.id===b.rid?' selected':''}>${r.name}</option>`).join('');
+  $('ebk-ci').value = b.ci||'';
+  $('ebk-co').value = b.co||'';
+  $('ebk-g').value = b.g||2;
+  $('ebk-dep').value = b.dep||0;
+  $('ebk-amt').value = b.amt||0;
+  Array.from($('ebk-src').options).forEach(o=>o.selected=o.value===b.src);
+  Array.from($('ebk-st').options).forEach(o=>o.selected=o.value===b.st);
+  $('ebk-note').value = b.note||'';
+  openM('m-edit-bk');
+}
+function saveBK(){
+  const bks=ld(K.bk), i=bks.findIndex(x=>x.id===editBKID);
+  if(i<0) return;
+  const rid=parseInt($v('ebk-rm'));
+  const room=ld(K.rooms).find(r=>r.id===rid);
+  bks[i]={...bks[i], nm:$v('ebk-nm'), ph:$v('ebk-ph'), rid, rnm:room?room.name:'',
+    ci:$v('ebk-ci'), co:$v('ebk-co'), g:+$v('ebk-g')||2,
+    dep:+$v('ebk-dep')||0, amt:+$v('ebk-amt')||0,
+    src:$v('ebk-src'), st:$v('ebk-st'), note:$v('ebk-note')};
+  sv(K.bk, bks);
+  closeM('m-edit-bk');
+  renderBK(curBKF);
+  showToast('✅ 已更新');
+}
+
+// ── 清潔編輯
+let editCLID = null;
+function openEditCL(id){
+  const cl=ld(K.cl), c=cl.find(x=>x.id===id);
+  if(!c) return;
+  editCLID = id;
+  $('ecl-rm').innerHTML = ld(K.rooms).map(r=>`<option value="${r.id}" data-nm="${r.name}"${r.id===c.rid?' selected':''}>${r.name}</option>`).join('');
+  $('ecl-dt').value = c.dt||'';
+  $('ecl-tp').value = c.tp||'一般清潔';
+  const staff=DB.staff&&DB.staff.length?DB.staff:['小美','小華','大明','待分配'];
+  $('ecl-st').innerHTML = staff.map(s=>`<option${s===c.st?' selected':''}>${s}</option>`).join('');
+  $('ecl-note').value = c.note||'';
+  openM('m-edit-cl');
+}
+function saveEditCL(){
+  const cl=ld(K.cl), i=cl.findIndex(x=>x.id===editCLID);
+  if(i<0) return;
+  const sel=$('ecl-rm');
+  const rid=+sel.value;
+  const rnm=sel.options[sel.selectedIndex]?.getAttribute('data-nm')||cl[i].rnm;
+  cl[i]={...cl[i], dt:$v('ecl-dt'), rid, rnm, tp:$v('ecl-tp'), st:$v('ecl-st'), note:$v('ecl-note')};
+  sv(K.cl, cl);
+  closeM('m-edit-cl');
+  renderCL();
+  showToast('✅ 已更新');
+}
+
 startListeners();
 </script>
+
+<!-- Edit Booking -->
+<div class="modal-ov" id="m-edit-bk">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">編輯訂房</div><button class="modal-x" onclick="closeM('m-edit-bk')">✕</button></div>
+    <div class="g2">
+      <div class="fg"><label>客人姓名</label><input id="ebk-nm"></div>
+      <div class="fg"><label>聯絡電話</label><input id="ebk-ph" type="tel"></div>
+    </div>
+    <div class="fg"><label>房間</label><select id="ebk-rm"></select></div>
+    <div class="g2">
+      <div class="fg"><label>入住日期</label><input id="ebk-ci" type="date"></div>
+      <div class="fg"><label>退房日期</label><input id="ebk-co" type="date"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>人數</label><input id="ebk-g" type="number" min="1"></div>
+      <div class="fg"><label>訂金（元）</label><input id="ebk-dep" type="number" min="0"></div>
+    </div>
+    <div class="fg"><label>總金額（元）</label><input id="ebk-amt" type="number" min="0"></div>
+    <div class="g2">
+      <div class="fg"><label>訂房來源</label><select id="ebk-src"><option>直接訂房</option><option>Airbnb</option><option>Booking.com</option><option>Agoda</option><option>電話訂房</option><option>Line 訂房</option><option>其他</option></select></div>
+      <div class="fg"><label>狀態</label><select id="ebk-st"><option value="confirmed">已確認</option><option value="checkedin">入住中</option><option value="checkedout">已退房</option><option value="cancelled">已取消</option></select></div>
+    </div>
+    <div class="fg"><label>備註</label><textarea id="ebk-note" rows="2"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeM('m-edit-bk')">取消</button>
+      <button class="btn btn-p" onclick="saveBK()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Cleaning -->
+<div class="modal-ov" id="m-edit-cl">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-ttl">編輯清潔任務</div><button class="modal-x" onclick="closeM('m-edit-cl')">✕</button></div>
+    <div class="g2">
+      <div class="fg"><label>日期</label><input id="ecl-dt" type="date"></div>
+      <div class="fg"><label>房間</label><select id="ecl-rm"></select></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>清潔類型</label><select id="ecl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
+      <div class="fg"><label>負責人員</label><select id="ecl-st"></select></div>
+    </div>
+    <div class="fg"><label>備註</label><textarea id="ecl-note" rows="2"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeM('m-edit-cl')">取消</button>
+      <button class="btn btn-p" onclick="saveEditCL()">儲存</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
