@@ -4,13 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>橋見幸福民宿 · 管理系統</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="橋見民宿">
-<meta name="theme-color" content="#F26522">
-<meta name="mobile-web-app-capable" content="yes">
-<link id="apple-touch-icon-link" rel="apple-touch-icon">
-<link id="favicon-link" rel="icon" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -25,48 +18,6 @@
 #sync-dot.syncing{background:#E8C060;animation:blink .7s ease infinite}
 #sync-dot.err{background:#E05C5C}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* ── 月曆 ── */
-.cal-wrap{display:grid;min-width:700px}
-.cal-hdr-row{display:flex;background:var(--bg);border-bottom:1px solid var(--border)}
-.cal-day-col{min-width:36px;max-width:36px;text-align:center;padding:8px 0;font-size:11px;color:var(--txt3);border-right:1px solid var(--border)}
-.cal-day-col.today{color:var(--orange);font-weight:700}
-.cal-day-col.weekend{color:#E74C3C}
-.cal-room-label{min-width:110px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--bg);border-right:1px solid var(--border)}
-.cal-row{display:flex;border-bottom:1px solid var(--border)}
-.cal-row:last-child{border-bottom:none}
-.cal-cell{min-width:36px;max-width:36px;height:38px;border-right:1px solid var(--border);position:relative}
-.cal-cell.booked{cursor:pointer}
-.cal-cell.start{border-radius:6px 0 0 6px}
-.cal-cell.end{border-radius:0 6px 6px 0}
-
-/* ── 手機底部導覽 ── */
-#mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);z-index:200;padding:6px 0 env(safe-area-inset-bottom);box-shadow:0 -4px 16px rgba(0,0,0,.08)}
-.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;cursor:pointer;color:var(--txt3);font-size:10px;flex:1;transition:color .2s}
-.mob-nav-item span{font-size:10px}
-.mob-nav-item.active{color:var(--orange)}
-#mob-nav{display:none;flex-direction:row}
-
-@media(max-width:768px){
-  #sidebar{transform:translateX(-100%)}#sidebar.open{transform:translateX(0)}
-  #main{margin-left:0;padding-bottom:70px}
-  #mob-btn{display:flex}.pg-header{padding-left:62px;padding-right:14px}
-  .pg-content{padding:14px}
-  .g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
-  .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px;text-align:center}
-  #mob-nav{display:flex}
-  #cal-hint{display:block!important}
-  /* 讓所有表格可以左右滑動，不隱藏任何欄位 */
-  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .tw table{min-width:600px;}
-  /* 訂房管理表格較寬 */
-  #bk-tbody table, #s-bookings .tw table{min-width:750px;}
-  .btn-sm{padding:8px 12px;font-size:13px}
-  .modal{padding:20px;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;max-height:90vh;margin:0}
-  .modal-ov.open{align-items:flex-end}
-  input,select,textarea{font-size:16px!important}
-}
-@media(max-width:480px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.gr{grid-template-columns:1fr 1fr}}
 </style>
 <style>
 :root{
@@ -124,9 +75,6 @@ body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;ba
 .btn-d{background:#E74C3C;color:#fff}.btn-d:hover{background:#C0392B}
 .btn-sm{padding:5px 10px;font-size:12px}
 .tw{overflow-x:auto}
-#bk-tbody tr td{vertical-align:middle}
-#bk-tbody .btn{vertical-align:middle;margin:2px}
-#s-bookings th[onclick]:hover{color:var(--orange);background:var(--orange-p)}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:10px 14px;font-size:12px;font-weight:500;color:var(--txt3);background:var(--bg);border-bottom:1px solid var(--border)}
 td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle}
@@ -173,9 +121,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 
 <div id="load-ov">
   <div class="ld-title">橋見幸福民宿</div>
-  <div class="ld-sub" id="ld-sub-txt">正在連線雲端資料…</div>
+  <div class="ld-sub">正在連線雲端資料…</div>
   <div class="ld-spin"></div>
-  <button onclick="startApp()" style="margin-top:28px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;">略過，直接進入</button>
 </div>
 
 <button id="mob-btn" onclick="toggleSB()">☰</button>
@@ -195,31 +142,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('guests')"><span class="nav-icon">👥</span>顧客資料</div>
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
-  <div style="padding:14px 20px;border-top:1px solid var(--border);">
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <button onclick="exportBackupJSON()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;">⬇ JSON</button>
-      <button onclick="exportBackup()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;">⬇ Excel</button>
-      <button onclick="$('import-file').click()" class="btn btn-o btn-sm" style="flex:1;justify-content:center;font-size:12px;white-space:nowrap;">⬆ 還原</button>
-      <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importBackup(event)">
-    </div>
+  <div style="padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);">
     <div style="font-size:11px;color:var(--txt3);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
   </div>
 </aside>
-
-<!-- 手機底部導覽 -->
-<nav id="mob-nav">
-  <div class="mob-nav-item active" onclick="goTo('dashboard');setMobNav(this)">📊<span>總覽</span></div>
-  <div class="mob-nav-item" onclick="goTo('rooms');setMobNav(this)">🏠<span>房間</span></div>
-  <div class="mob-nav-item" onclick="goTo('bookings');setMobNav(this)">📅<span>訂房</span></div>
-  <div class="mob-nav-item" onclick="goTo('finance');setMobNav(this)">💰<span>帳務</span></div>
-  <div class="mob-nav-item" onclick="goTo('cleaning');setMobNav(this)">🧹<span>清潔</span></div>
-</nav>
 
 <main id="main">
   <div class="pg-header">
     <h2 id="pg-title">總覽儀表板</h2>
     <div style="display:flex;align-items:center;gap:14px;">
-      <div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="openM('m-diag')" title="點擊查看連線診斷"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div>
       <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
@@ -277,48 +209,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="section" id="s-bookings">
       <div class="sh-hdr">
         <div class="sh-ttl">訂房管理</div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-o btn-sm" id="view-toggle" onclick="toggleBKView()">📅 月曆視圖</button>
-          <button class="btn btn-p" onclick="openM('m-add-bk')">＋ 新增訂房</button>
-        </div>
+        <button class="btn btn-p" onclick="openM('m-add-bk')">＋ 新增訂房</button>
       </div>
-
-      <!-- 列表視圖 -->
-      <div id="bk-list-view">
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <button class="btn btn-o btn-sm bk-f active" onclick="filterBK('all',this)">全部</button>
-          <button class="btn btn-o btn-sm bk-f" onclick="filterBK('confirmed',this)">已確認</button>
-          <button class="btn btn-o btn-sm bk-f" onclick="filterBK('checkedin',this)">入住中</button>
-          <button class="btn btn-o btn-sm bk-f" onclick="filterBK('checkedout',this)">已退房</button>
-          <button class="btn btn-o btn-sm bk-f" onclick="filterBK('cancelled',this)">已取消</button>
-        </div>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <div class="tw"><table><thead><tr>
-            <th>編號</th>
-            <th id="th-room" onclick="sortBK('room')" style="cursor:pointer;user-select:none;">房間 <span id="si-room"></span></th>
-            <th>客人</th>
-            <th id="th-ci" onclick="sortBK('ci')" style="cursor:pointer;user-select:none;">入住 <span id="si-ci">↓</span></th>
-            <th id="th-co" onclick="sortBK('co')" style="cursor:pointer;user-select:none;">退房 <span id="si-co"></span></th>
-            <th>人數</th><th>金額</th><th>狀態</th><th>操作</th>
-          </tr></thead>
-          <tbody id="bk-tbody"></tbody></table></div>
-        </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn btn-o btn-sm bk-f active" onclick="filterBK('all',this)">全部</button>
+        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('confirmed',this)">已確認</button>
+        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('checkedin',this)">入住中</button>
+        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('checkedout',this)">已退房</button>
+        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('cancelled',this)">已取消</button>
       </div>
-
-      <!-- 月曆視圖 -->
-      <div id="bk-cal-view" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <button class="btn btn-o btn-sm" onclick="calNav(-1)">‹ 上個月</button>
-          <span id="cal-title" style="font-weight:600;font-size:15px;"></span>
-          <button class="btn btn-o btn-sm" onclick="calNav(1)">下個月 ›</button>
-        </div>
-        <p style="font-size:11px;color:var(--txt3);text-align:center;margin-bottom:8px;display:none;" id="cal-hint">← 左右滑動查看完整月份 →</p>
-        <div class="card" style="padding:0;overflow:hidden;">
-          <!-- 月曆：手機可左右滑動 -->
-          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-            <div id="cal-grid" style="min-width:600px;"></div>
-          </div>
-        </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="tw"><table><thead><tr><th>編號</th><th>房間</th><th>客人</th><th>入住</th><th>退房</th><th>人數</th><th>金額</th><th>狀態</th><th>操作</th></tr></thead>
+        <tbody id="bk-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -401,7 +303,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
       </div>
     </div>
 
-
   </div>
 </main>
 
@@ -413,7 +314,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="fg"><label>房間名稱</label><input id="rn-name" placeholder="例：幸福套房"></div>
     <div class="g2"><div class="fg"><label>房間編號</label><input id="rn-num" placeholder="例：101"></div>
     <div class="fg"><label>每晚定價（元）</label><input type="number" id="rn-price" placeholder="3800"></div></div>
-    <div class="g2"><div class="fg"><label>房型</label><select id="rn-type"><option>雙人房</option><option>四人房</option></select></div>
+    <div class="g2"><div class="fg"><label>房型</label><select id="rn-type"><option>雙人套房</option><option>雙人房</option><option>家庭房</option><option>單人房</option><option>閣樓房</option><option>景觀房</option></select></div>
     <div class="fg"><label>最大人數</label><input type="number" id="rn-cap" value="2" min="1" max="10"></div></div>
     <div class="fg"><label>狀態</label><select id="rn-st"><option value="available">空房</option><option value="occupied">入住中</option><option value="reserved">已預訂</option><option value="cleaning">清潔中</option><option value="maintenance">維修中</option></select></div>
     <div class="fg"><label>備註</label><textarea id="rn-note" rows="2"></textarea></div>
@@ -427,7 +328,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="modal-hdr"><div class="modal-ttl" id="rd-title">房間詳情</div><button class="modal-x" onclick="closeM('m-room-detail')">✕</button></div>
     <div id="rd-content"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
-      <button class="btn btn-d" onclick="deleteRoom()">刪除房間</button>
       <button class="btn btn-o" onclick="closeM('m-room-detail')">關閉</button>
       <button class="btn btn-p" onclick="saveRD()">儲存</button>
     </div>
@@ -452,20 +352,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   </div>
 </div>
 
-<!-- Edit Finance -->
-<div class="modal-ov" id="m-edit-fin">
-  <div class="modal">
-    <div class="modal-hdr"><div class="modal-ttl">編輯帳務記錄</div><button class="modal-x" onclick="closeM('m-edit-fin')">✕</button></div>
-    <div class="g2"><div class="fg"><label>類型</label><select id="ef-tp" onchange="updEditFinCats()"><option value="income">收入</option><option value="expense">支出</option></select></div>
-    <div class="fg"><label>類別</label><select id="ef-cat"></select></div></div>
-    <div class="g2"><div class="fg"><label>日期</label><input type="date" id="ef-dt"></div>
-    <div class="fg"><label>金額（元）</label><input type="number" id="ef-amt"></div></div>
-    <div class="fg"><label>說明</label><input id="ef-desc"></div>
-    <div class="fg"><label>備註</label><textarea id="ef-note" rows="2"></textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-fin')">取消</button><button class="btn btn-p" onclick="saveEditFin()">儲存</button></div>
-  </div>
-</div>
-
 <!-- Add Finance -->
 <div class="modal-ov" id="m-add-fin">
   <div class="modal">
@@ -480,32 +366,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   </div>
 </div>
 
-<!-- Staff Management -->
-<div class="modal-ov" id="m-staff" style="z-index:300;">
-  <div class="modal" style="max-width:380px;z-index:301;">
-    <div class="modal-hdr"><div class="modal-ttl">👷 管理清潔人員</div><button class="modal-x" onclick="closeM('m-staff')">✕</button></div>
-    <div id="staff-list" style="margin-bottom:16px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input id="new-staff" placeholder="輸入新人員姓名" style="flex:1;" onkeydown="if(event.key==='Enter')addStaff()">
-      <button class="btn btn-p" onclick="addStaff()">新增</button>
-    </div>
-    <div style="margin-top:16px;text-align:right;"><button class="btn btn-ghost" onclick="closeM('m-staff')">完成</button></div>
-  </div>
-</div>
-
-<!-- Edit Cleaning -->
-<div class="modal-ov" id="m-edit-cl">
-  <div class="modal">
-    <div class="modal-hdr"><div class="modal-ttl">編輯清潔任務</div><button class="modal-x" onclick="closeM('m-edit-cl')">✕</button></div>
-    <div class="g2"><div class="fg"><label>日期</label><input type="date" id="ecl-dt"></div>
-    <div class="fg"><label>房間</label><select id="ecl-rm"></select></div></div>
-    <div class="g2"><div class="fg"><label>清潔類型</label><select id="ecl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><label style="margin-bottom:0;">負責人員</label><button type="button" onclick="openM('m-staff')" style="font-size:12px;color:var(--orange);background:var(--orange-p);border:1px solid rgba(242,101,34,.2);border-radius:6px;cursor:pointer;padding:3px 10px;font-family:inherit;">✏️ 管理人員</button></div><div id="ecl-st-wrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;min-height:44px;background:var(--white);"></div></div></div>
-    <div class="fg"><label>備註</label><textarea id="ecl-note" rows="2"></textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-cl')">取消</button><button class="btn btn-p" onclick="saveEditCL()">儲存</button></div>
-  </div>
-</div>
-
 <!-- Add Cleaning -->
 <div class="modal-ov" id="m-add-cl">
   <div class="modal">
@@ -513,7 +373,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="cl-dt"></div>
     <div class="fg"><label>房間</label><select id="cl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="cl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><label style="margin-bottom:0;">負責人員</label><button type="button" onclick="openM('m-staff')" style="font-size:12px;color:var(--orange);background:var(--orange-p);border:1px solid rgba(242,101,34,.2);border-radius:6px;cursor:pointer;padding:3px 10px;font-family:inherit;">✏️ 管理人員</button></div><div id="cl-st-wrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;min-height:44px;background:var(--white);"></div></div></div>
+    <div class="fg"><label>負責人員</label><select id="cl-st"><option>小美</option><option>小華</option><option>大明</option><option>待分配</option></select></div></div>
     <div class="fg"><label>備註</label><textarea id="cl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-cl')">取消</button><button class="btn btn-p" onclick="addCL()">新增任務</button></div>
   </div>
@@ -556,69 +416,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   </div>
 </div>
 
-
-<!-- Diagnostic Modal -->
-<div class="modal-ov" id="m-diag">
-  <div class="modal" style="max-width:480px;">
-    <div class="modal-hdr">
-      <div class="modal-ttl">🔍 Firebase 連線診斷</div>
-      <button class="modal-x" onclick="closeM('m-diag')">✕</button>
-    </div>
-    <div id="diag-content" style="font-size:13px;line-height:2;">
-      <div style="text-align:center;padding:20px;color:var(--txt3);">檢測中…</div>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
-      <button class="btn btn-o" onclick="runDiag()">🔄 重新檢測</button>
-      <button class="btn btn-ghost" onclick="closeM('m-diag')">關閉</button>
-    </div>
-  </div>
-</div>
-
-<!-- Edit Booking -->
-<div class="modal-ov" id="m-edit-bk">
-  <div class="modal">
-    <div class="modal-hdr"><div class="modal-ttl">編輯訂房</div><button class="modal-x" onclick="closeM('m-edit-bk')">✕</button></div>
-    <div class="g2"><div class="fg"><label>客人姓名</label><input id="ebk-nm"></div>
-    <div class="fg"><label>聯絡電話</label><input type="tel" id="ebk-ph"></div></div>
-    <div class="fg"><label>房間</label><select id="ebk-rm"></select></div>
-    <div class="g2"><div class="fg"><label>入住日期</label><input type="date" id="ebk-ci"></div>
-    <div class="fg"><label>退房日期</label><input type="date" id="ebk-co"></div></div>
-    <div class="g2"><div class="fg"><label>人數</label><input type="number" id="ebk-g" min="1"></div>
-    <div class="fg"><label>訂金（元）</label><input type="number" id="ebk-dp"></div></div>
-    <div class="fg"><label>總金額（元）</label><input type="number" id="ebk-amt"></div>
-    <div class="g2"><div class="fg"><label>訂房來源</label><select id="ebk-src"><option>直接訂房</option><option>Airbnb</option><option>Booking.com</option><option>Agoda</option><option>電話訂房</option><option>Line 訂房</option><option>其他</option></select></div>
-    <div class="fg"><label>狀態</label><select id="ebk-st"><option value="confirmed">已確認</option><option value="checkedin">入住中</option><option value="checkedout">已退房</option><option value="cancelled">已取消</option></select></div></div>
-    <div class="fg"><label>備註</label><textarea id="ebk-note" rows="2"></textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-bk')">取消</button><button class="btn btn-p" onclick="saveBK()">儲存</button></div>
-  </div>
-</div>
-
-<!-- LINE Notify -->
-<div class="modal-ov" id="m-line">
-  <div class="modal" style="max-width:420px;">
-    <div class="modal-hdr"><div class="modal-ttl">🔔 LINE 通知設定</div><button class="modal-x" onclick="closeM('m-line')">✕</button></div>
-    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--txt2);line-height:1.8;">
-      <strong>取得 LINE Notify Token：</strong><br>
-      1. 前往 <a href="https://notify-bot.line.me" target="_blank" style="color:var(--orange);">notify-bot.line.me</a><br>
-      2. 登入 → 發行權杖 → 選擇聊天室<br>
-      3. 複製 Token 貼在下方
-    </div>
-    <div class="fg"><label>LINE Notify Token</label><input id="line-token" placeholder="貼上你的 Token…" type="password"></div>
-    <div class="fg"><label>通知時機</label>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;"><input type="checkbox" id="ln-ci" checked style="width:auto;"> 入住當天早上提醒</label>
-        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;"><input type="checkbox" id="ln-co" checked style="width:auto;"> 退房當天早上提醒</label>
-        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;"><input type="checkbox" id="ln-inv" checked style="width:auto;"> 備品庫存不足提醒</label>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
-      <button class="btn btn-o" onclick="testLINE()">測試發送</button>
-      <button class="btn btn-o" onclick="closeM('m-line')">取消</button>
-      <button class="btn btn-p" onclick="saveLINE()">儲存</button>
-    </div>
-  </div>
-</div>
-
 <!-- Edit Guest -->
 <div class="modal-ov" id="m-edit-guest">
   <div class="modal">
@@ -628,7 +425,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="fg"><label>Email</label><input type="email" id="eg-em"></div>
     <div class="g2"><div class="fg"><label>身份證/護照號碼</label><input id="eg-id"></div>
     <div class="fg"><label>來源</label><select id="eg-src"><option>直接訂房</option><option>Airbnb</option><option>Booking.com</option><option>Agoda</option><option>Line 訂房</option><option>朋友介紹</option><option>其他</option></select></div></div>
-    <div class="g2"><div class="fg"><label>備註</label><textarea id="eg-note" rows="2"></textarea></div><div class="fg"><label>手動加計次數</label><input type="number" id="eg-stays" min="0" placeholder="0"><div style="font-size:11px;color:var(--txt3);margin-top:4px;">加上自動統計的退房次數</div></div></div>
+    <div class="fg"><label>備註</label><textarea id="eg-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-edit-guest')">取消</button><button class="btn btn-p" onclick="saveGuest()">儲存</button></div>
   </div>
 </div>
@@ -651,44 +448,18 @@ const db = firebase.firestore();
 // ══════════════════════════════════════════
 // 資料層：本機快取 + Firestore 同步
 // ══════════════════════════════════════════
-const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory', staff:'staff'};
-const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null, staff:null};
+const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory'};
+const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null};
 
 // 讀取本機快取
 const ld = k => DB[k] || [];
 // 寫入 Firestore（非同步）
 function sv(k, data) {
-  // 安全防護：如果 Firebase 資料還未載入，不允許寫入（避免覆蓋雲端資料）
-  if(!appReady && !loadedKeys.has(k)) {
-    console.warn('sv() blocked: Firebase not ready for', k);
-    return;
-  }
   DB[k] = data;
   setSyncing(true);
-  const clean = JSON.parse(JSON.stringify(data));
-  db.collection('bnb').doc(k).set({ data: clean })
-    .then(() => {
-      setSyncing(false);
-    })
-    .catch(e => {
-      console.error('Firestore 寫入失敗:', e);
-      setSyncError();
-      showToast('❌ 雲端同步失敗，資料僅存於本機', 'error');
-    });
-}
-
-// Toast 通知
-function showToast(msg, type='success'){
-  let t=document.getElementById('toast');
-  if(!t){t=document.createElement('div');t.id='toast';
-    t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .3s;pointer-events:none;';
-    document.body.appendChild(t);}
-  t.textContent=msg;
-  t.style.background=type==='error'?'#E74C3C':'#2ECC71';
-  t.style.color='#fff';
-  t.style.opacity='1';
-  clearTimeout(t._timer);
-  t._timer=setTimeout(()=>t.style.opacity='0',2500);
+  db.collection('bnb').doc(k).set({ data: JSON.parse(JSON.stringify(data)) })
+    .then(() => setSyncing(false))
+    .catch(e => { console.error(e); setSyncError(); });
 }
 
 // 同步指示燈
@@ -711,8 +482,8 @@ function setSyncError() {
 // 預設資料（首次使用時寫入 Firestore）
 // ══════════════════════════════════════════
 const uid = pre => pre + Date.now() + Math.random().toString(36).slice(2,5);
-const today = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
-const addD = (s,n) => { const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const today = () => new Date().toISOString().split('T')[0];
+const addD = (s,n) => { const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0] };
 
 function getDefaultData(k) {
   const t=today(), yd=addD(t,-1), t1=addD(t,1), t2=addD(t,2), t3=addD(t,3);
@@ -747,7 +518,6 @@ function getDefaultData(k) {
       {id:uid('G'),nm:'李美玲',ph:'0928-765-432',em:'li@example.com',idn:'B234567890',src:'Airbnb',note:'蜜月旅行',stays:1},
       {id:uid('G'),nm:'陳家豪',ph:'0966-111-222',em:'chen@example.com',idn:'C345678901',src:'Booking.com',note:'帶小孩，需嬰兒床',stays:2},
     ],
-    staff: ['小美','小華','大明','待分配'],
     inventory: [
       {id:uid('I'),nm:'洗髮精',cat:'備品',stk:3,unit:'瓶',min:10},
       {id:uid('I'),nm:'沐浴乳',cat:'備品',stk:5,unit:'瓶',min:10},
@@ -769,69 +539,36 @@ function getDefaultData(k) {
 // ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
-const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
-let loadedKeys = new Set();
-let appReady = false;
-
-function startApp(){
-  if(appReady) return;
-  appReady = true;
-  const ov = document.getElementById('load-ov');
-  if(ov){ ov.classList.add('hide'); setTimeout(()=>{ if(ov.parentNode)ov.remove(); },600); }
-  initDate(); setupMonths(); renderDash();
-  const inv = DB.inventory||[];
-  if(inv.some(i=>i.stk<=i.min)){ const d=$('inv-dot');if(d)d.style.display='block'; }
-}
-
-
-// ── 資料修復：補全缺少 _uid 的訂單，修復重複 BK 編號
-function migrateBookings(){
-  const bks = DB.bookings || [];
-  let changed = false;
-  const seenIds = {};
-  bks.forEach((b, i) => {
-    // 每筆訂單加上唯一內部識別碼
-    if(!b._uid){
-      b._uid = 'uid_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2,6);
-      changed = true;
-    }
-    // 修復重複的 BK 編號
-    if(seenIds[b.id]){
-      const nums = bks.map(x=>parseInt(x.id.replace('BK',''))||0);
-      const next = Math.max(...nums) + 1;
-      b.id = 'BK' + String(next).padStart(3,'0');
-      changed = true;
-    }
-    seenIds[b.id] = true;
-  });
-  if(changed){
-    sv('bookings', bks);
-    console.log('資料修復完成');
-  }
-}
+const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory'];
+let loadedCount = 0;
 
 function startListeners() {
-  // 8秒後強制啟動，避免網路問題卡住
-  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 8000);
-
   COL_KEYS.forEach(k => {
     db.collection('bnb').doc(k).onSnapshot(snap => {
       if (snap.exists) {
-        // 資料存在：讀取進來
         DB[k] = snap.data().data || [];
       } else {
-        // 資料不存在：只設空陣列，絕不自動寫入任何預設資料
-        if(DB[k] === null) DB[k] = [];
+        if (DB[k] === null) DB[k] = [];
       }
-      loadedKeys.add(k);
-      if(!appReady && loadedKeys.size >= COL_KEYS.length){ startApp(); setTimeout(migrateBookings,500); }
-      if(appReady) renderSec(curSec);
+      loadedCount++;
+      if (loadedCount >= COL_KEYS.length) {
+        // 全部載入完成，隱藏 loading
+        const ov = document.getElementById('load-ov');
+        if (ov) { ov.classList.add('hide'); setTimeout(()=>ov.remove(), 600); }
+        initDate();
+        setupMonths();
+        renderDash();
+        // 低庫存紅點
+        const inv = DB.inventory || [];
+        if (inv.some(i=>i.stk<=i.min)) { const d=$('inv-dot'); if(d) d.style.display='block'; }
+      }
+      // 已載入後，即時更新當前頁面
+      if (loadedCount >= COL_KEYS.length) {
+        renderSec(curSec);
+      }
     }, err => {
-      console.error('Firestore error:', k, err);
+      console.error('Firestore error:', err);
       setSyncError();
-      if(DB[k] === null) DB[k] = [];
-      loadedKeys.add(k);
-      if(!appReady && loadedKeys.size >= COL_KEYS.length) startApp();
     });
   });
 }
@@ -856,25 +593,13 @@ function goTo(s){
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   $('s-'+s).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick')&&x.getAttribute('onclick').includes("'"+s+"'"))x.classList.add('active')});
+  document.querySelectorAll('.nav-item').forEach(x=>{if(x.getAttribute('onclick').includes("'"+s+"'"))x.classList.add('active')});
   $('pg-title').textContent=TITLES[s];
   curSec=s;
   $('sidebar').classList.remove('open');
   renderSec(s);
 }
-function setMobNav(el){document.querySelectorAll('.mob-nav-item').forEach(x=>x.classList.remove('active'));el.classList.add('active')}
-function renderSec(s){
-  const fn={
-    dashboard:renderDash,
-    rooms:renderRooms,
-    bookings:()=>{ renderBK(curBKF); renderCal(); },
-    finance:renderFin,
-    cleaning:renderCL,
-    guests:renderGuests,
-    inventory:()=>renderInv(curInvF)
-  };
-  fn[s]?.();
-}
+function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
 function toggleSB(){$('sidebar').classList.toggle('open')}
 
 // ══════════════════════════════════════════
@@ -902,9 +627,9 @@ function renderDash(){
   const d=new Date();const dy=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   $('today-disp').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${dy[d.getDay()]}`;
   const ciL=$('d-ci-list');
-  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
+  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
   const coL=$('d-co-list');
-  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
+  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
   const low=inv.filter(i=>i.stk<=i.min);
   const ld2=$('d-low');
   if(low.length){ld2.style.display='block';$('d-low-items').innerHTML=low.map(i=>`<div style="padding:5px 0;font-size:13px;">⚠️ <strong>${i.nm}</strong>：剩 ${i.stk} ${i.unit}（需 ${i.min} ${i.unit}）</div>`).join('')}
@@ -929,24 +654,19 @@ function renderRooms(){
 function openRD(id){
   const r=(ld(K.rooms)).find(x=>x.id===id);if(!r)return;
   editRID=id;$('rd-title').textContent=r.name;
-  $('rd-content').innerHTML=`<div class="g2"><div class="fg"><label>名稱</label><input id="rd-nm" value="${r.name}"></div><div class="fg"><label>編號</label><input id="rd-num" value="${r.num}"></div></div><div class="g2"><div class="fg"><label>房型</label><select id="rd-tp">${['雙人房','四人房'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label>人數</label><input type="number" id="rd-cap" value="${r.cap}"></div></div><div class="g2"><div class="fg"><label>定價（元）</label><input type="number" id="rd-pr" value="${r.price}"></div><div class="fg"><label>狀態</label><select id="rd-st">${Object.entries(SLBL).map(([k,v])=>`<option value="${k}"${r.status===k?' selected':''}>${v}</option>`).join('')}</select></div></div><div class="fg"><label>備註</label><textarea id="rd-nt" rows="2">${r.note||''}</textarea></div>`;
+  $('rd-content').innerHTML=`<div class="g2"><div class="fg"><label>名稱</label><input id="rd-nm" value="${r.name}"></div><div class="fg"><label>編號</label><input id="rd-num" value="${r.num}"></div></div><div class="g2"><div class="fg"><label>房型</label><select id="rd-tp">${['雙人套房','雙人房','家庭房','單人房','閣樓房','景觀房'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label>人數</label><input type="number" id="rd-cap" value="${r.cap}"></div></div><div class="g2"><div class="fg"><label>定價（元）</label><input type="number" id="rd-pr" value="${r.price}"></div><div class="fg"><label>狀態</label><select id="rd-st">${Object.entries(SLBL).map(([k,v])=>`<option value="${k}"${r.status===k?' selected':''}>${v}</option>`).join('')}</select></div></div><div class="fg"><label>備註</label><textarea id="rd-nt" rows="2">${r.note||''}</textarea></div>`;
   openM('m-room-detail');
 }
 function saveRD(){
   const rooms=ld(K.rooms),i=rooms.findIndex(r=>r.id===editRID);if(i<0)return;
   rooms[i]={...rooms[i],name:$v('rd-nm'),num:$v('rd-num'),type:$v('rd-tp'),cap:+$v('rd-cap'),price:+$v('rd-pr'),status:$v('rd-st'),note:$v('rd-nt')};
-  sv(K.rooms,rooms);closeM('m-room-detail');renderRooms();
-}
-function deleteRoom(){
-  if(!confirm('確認刪除此房間？相關訂房記錄不受影響。'))return;
-  sv(K.rooms,ld(K.rooms).filter(r=>r.id!==editRID));
-  closeM('m-room-detail');renderRooms();
+  sv(K.rooms,rooms);closeM('m-room-detail');
 }
 function addRoom(){
   const nm=$v('rn-name').trim(),num=$v('rn-num').trim();if(!nm||!num)return alert('請填寫名稱和編號');
   const rooms=ld(K.rooms);
   rooms.push({id:Date.now(),name:nm,num,type:$v('rn-type'),cap:+$v('rn-cap')||2,price:+$v('rn-price')||0,status:$v('rn-st'),note:$v('rn-note')});
-  sv(K.rooms,rooms);closeM('m-add-room');['rn-name','rn-num','rn-price','rn-note'].forEach(x=>$(x).value='');renderRooms();
+  sv(K.rooms,rooms);closeM('m-add-room');['rn-name','rn-num','rn-price','rn-note'].forEach(x=>$(x).value='');
 }
 
 // ══════════════════════════════════════════
@@ -955,248 +675,100 @@ function addRoom(){
 const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',cancelled:'已取消'};
 const BSCLR={confirmed:{bg:'#EBF5FB',c:'#1A5276'},checkedin:{bg:'#E9F7EF',c:'#1A9E52'},checkedout:{bg:'#F4F6F7',c:'#717D7E'},cancelled:{bg:'#FDEDEC',c:'#C0392B'}};
 let curBKF='all';
-let bkSortKey='ci', bkSortDir='desc'; // 預設依入住日期新→舊
-
-function sortBK(key){
-  if(bkSortKey===key) bkSortDir=bkSortDir==='asc'?'desc':'asc';
-  else { bkSortKey=key; bkSortDir='asc'; }
-  // 更新標題箭頭
-  ['ci','co','room'].forEach(k=>{
-    const el=$('si-'+k);
-    if(!el)return;
-    el.textContent=bkSortKey===k?(bkSortDir==='asc'?'↑':'↓'):'';
-    const th=$('th-'+k);
-    if(th)th.style.color=bkSortKey===k?'var(--orange)':'';
-  });
-  renderBK(curBKF);
-}
 function filterBK(f,btn){curBKF=f;document.querySelectorAll('.bk-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBK(f)}
-function syncBK(){
-  renderBK(curBKF);
-  renderCal();  // 永遠同時更新月曆，不管目前在哪個視圖
-}
 function renderBK(f){
   const bks=ld(K.bk),rooms=ld(K.rooms);
-  let data=f==='all'?[...bks]:bks.filter(b=>b.st===f);
-  // 排序
-  data.sort((a,b)=>{
-    let va,vb;
-    if(bkSortKey==='room'){
-      const ra=rooms.find(r=>r.id===a.rid),rb=rooms.find(r=>r.id===b.rid);
-      va=(ra?.name||'');vb=(rb?.name||'');
-    } else {
-      va=a[bkSortKey]||''; vb=b[bkSortKey]||'';
-    }
-    const cmp=va.localeCompare(vb);
-    return bkSortDir==='asc'?cmp:-cmp;
-  });
+  let data=(f==='all'?bks:bks.filter(b=>b.st===f)).sort((a,b)=>b.id.localeCompare(a.id));
   const tb=$('bk-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
-    return`<tr>
-      <td><code style="font-size:12px;">${b.id}</code></td>
-      <td><strong>${r?r.name:'—'}</strong></td>
-      <td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td>
-      <td>${fmtDF(b.ci)}</td>
-      <td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td>
-      <td>${b.g}人</td>
-      <td style="font-size:14px;">${fmtM(b.amt)}<br><span style="font-size:11px;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td>
-      <td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td>
-      <td style="white-space:nowrap;vertical-align:middle;padding:8px 10px;">
-        <button class="btn btn-o btn-sm" onclick="openEditBK('${b._uid||b.id}')">編輯</button>
-        ${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">入住</button>`:''}
-        ${b.st==='checkedin'?`<button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">退房</button>`:''}
-        ${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b._uid||b.id}')">取消</button>`:''}
-        <button class="btn btn-d btn-sm" onclick="deleteBK('${b._uid||b.id}')">刪除</button>
-      </td>
-    </tr>`;
+    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b.id}')">退房</button>`:''}${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b.id}')">取消</button>`:''}</td></tr>`;
   }).join('');
 }
-
-// ── 編輯訂房
-let editBKID=null;
-function openEditBK(uid){
-  const b=ld(K.bk).find(x=>x._uid===uid||x.id===uid),rooms=ld(K.rooms);if(!b)return;
-  editBKID=b._uid||b.id;
-  $('ebk-rm').innerHTML=rooms.map(r=>`<option value="${r.id}"${r.id===b.rid?' selected':''}>${r.name}</option>`).join('');
-  $('ebk-nm').value=b.nm;$('ebk-ph').value=b.ph||'';$('ebk-ci').value=b.ci;$('ebk-co').value=b.co;
-  $('ebk-g').value=b.g;$('ebk-dp').value=b.dep;$('ebk-amt').value=b.amt;
-  $('ebk-note').value=b.note||'';
-  Array.from($('ebk-src').options).forEach(o=>o.selected=o.value===b.src);
-  Array.from($('ebk-st').options).forEach(o=>o.selected=o.value===b.st);
-  openM('m-edit-bk');
+function setupBKModal(){
+  const rooms=ld(K.rooms),guests=ld(K.guests),t=today();
+  $('bk-rm').innerHTML=rooms.map(r=>`<option value="${r.id}">${r.name} (${r.type})</option>`).join('');
+  $('g-dl').innerHTML=guests.map(g=>`<option value="${g.nm}">`).join('');
+  $('bk-ci').value=t;$('bk-co').value=addD(t,1);
+  $('bk-nm').onchange=function(){const g=guests.find(x=>x.nm===this.value);if(g)$('bk-ph').value=g.ph};
 }
-function saveBK(){
-  const bks=ld(K.bk),i=bks.findIndex(b=>(b._uid===editBKID||b.id===editBKID));if(i<0)return;
-  bks[i]={...bks[i],rid:+$v('ebk-rm'),nm:$v('ebk-nm'),ph:$v('ebk-ph'),ci:$v('ebk-ci'),co:$v('ebk-co'),g:+$v('ebk-g'),dep:+$v('ebk-dp'),amt:+$v('ebk-amt'),src:$v('ebk-src'),st:$v('ebk-st'),note:$v('ebk-note')};
-  sv(K.bk,bks);closeM('m-edit-bk');syncBK();
+function openBKModal(){setupBKModal();openM('m-add-bk')}
+function addBK(){
+  const nm=$v('bk-nm').trim(),ph=$v('bk-ph'),rid=+$v('bk-rm'),ci=$v('bk-ci'),co=$v('bk-co');
+  if(!nm||!ci||!co||!rid)return alert('請填寫必要資料');
+  if(co<=ci)return alert('退房日期需晚於入住日期');
+  const bks=ld(K.bk);
+  const newId='BK'+String(bks.length+1).padStart(3,'0');
+  bks.push({id:newId,rid,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
+  sv(K.bk,bks);closeM('m-add-bk');
 }
-
-// ── 月曆視圖
-let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
-let bkView='list';
-function toggleBKView(){
-  bkView=bkView==='list'?'cal':'list';
-  $('bk-list-view').style.display=bkView==='list'?'block':'none';
-  $('bk-cal-view').style.display=bkView==='cal'?'block':'none';
-  $('view-toggle').textContent=bkView==='list'?'📅 月曆視圖':'☰ 列表視圖';
-  if(bkView==='cal') renderCal();
-  else renderBK(curBKF);
+function checkIn(id){
+  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
+  b.st='checkedin';
+  const ri=rooms.findIndex(r=>r.id===b.rid);if(ri>=0)rooms[ri].status='occupied';
+  sv(K.bk,bks);sv(K.rooms,rooms);
 }
-function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++}if(calMonth<0){calMonth=11;calYear--}renderCal()}
-function renderCal(){
-  const year=calYear,month=calMonth;
-  const daysInMonth=new Date(year,month+1,0).getDate();
-  const rooms=ld(K.rooms),bks=ld(K.bk).filter(b=>b.st!=='cancelled');
-  const t=today();
-  $('cal-title').textContent=`${year}年 ${month+1}月`;
-  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
-
-  // 用 HTML table，房間欄固定，日期欄固定寬讓手機可滑動
-  let html=`<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:${88 + daysInMonth * 32}px;">`;
-  html+=`<colgroup><col style="width:88px;">`;
-  for(let i=0;i<daysInMonth;i++) html+=`<col style="width:32px;">`;
-  html+=`</colgroup>`;
-
-  // 標題列
-  html+=`<thead><tr><th style="background:var(--bg);padding:8px;font-size:11px;color:var(--txt3);font-weight:600;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:left;">房間</th>`;
-  for(let i=1;i<=daysInMonth;i++){
-    const d=new Date(year,month,i);
-    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const w=d.getDay();
-    const isToday=ds===t, isWk=w===0||w===6;
-    const color=isToday?'var(--orange)':isWk?'#E74C3C':'var(--txt3)';
-    html+=`<th style="background:var(--bg);padding:5px 2px;font-size:10px;color:${color};font-weight:${isToday?'700':'400'};border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-align:center;line-height:1.4;">${i}<br><span style="font-size:9px;">${['日','一','二','三','四','五','六'][w]}</span></th>`;
-  }
-  html+=`</tr></thead><tbody>`;
-
-  // 各房間列
-  rooms.forEach(r=>{
-    html+=`<tr><td style="padding:6px 8px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--bg);border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</td>`;
-    for(let i=1;i<=daysInMonth;i++){
-      const d=new Date(year,month,i);
-      const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-      const bk=bks.find(b=>b.rid===r.id&&b.ci<=ds&&b.co>ds);
-      const color=bk?STATUS_COLOR[bk.st]||'#95A5A6':null;
-      const isStart=bk&&bk.ci===ds;
-      const bg=bk?color+'22':'transparent';
-      const bl=isStart?`border-left:2px solid ${color};`:'';
-      html+=`<td style="padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:${bg};${bl}height:40px;" title="${bk?bk.nm+' ('+bk.ci+'→'+bk.co+')':''}">`;
-      if(isStart&&bk){
-        html+=`<div style="font-size:9px;color:${color};font-weight:600;padding:2px 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${bk.nm}</div>`;
-      }
-      html+=`</td>`;
-    }
-    html+=`</tr>`;
-  });
-
-  html+=`</tbody></table>`;
-  html+=`<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:12px;color:var(--txt3);">
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3498DB22;border-left:2px solid #3498DB;"></span>已確認</span>
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#F2652222;border-left:2px solid #F26522;"></span>入住中</span>
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#95A5A622;border-left:2px solid #95A5A6;"></span>已退房</span>
-  </div>`;
-  $('cal-grid').innerHTML=html;
+function checkOut(id){
+  if(!confirm('確認辦理退房？'))return;
+  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
+  b.st='checkedout';
+  const ri=rooms.findIndex(r=>r.id===b.rid);
+  const rm=rooms[ri];
+  if(ri>=0)rooms[ri].status='cleaning';
+  const cl=ld(K.cl);
+  cl.push({id:uid('C'),dt:today(),rid:b.rid,rnm:rm?rm.name:'',tp:'退房清潔',st:'待分配',done:false,note:`退房：${b.nm}`});
+  sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);
+  alert('退房完成！已自動新增清潔任務。');
+}
+function cancelBK(id){
+  if(!confirm('確認取消此訂房？'))return;
+  const bks=ld(K.bk),b=bks.find(x=>x.id===id);if(b){b.st='cancelled';sv(K.bk,bks)}
 }
 
-// ── LINE 通知
-function saveLINE(){
-  localStorage.setItem('line_token',$v('line-token'));
-  localStorage.setItem('line_ci',$('ln-ci').checked?'1':'0');
-  localStorage.setItem('line_co',$('ln-co').checked?'1':'0');
-  localStorage.setItem('line_inv',$('ln-inv').checked?'1':'0');
-  closeM('m-line');alert('✅ LINE 通知設定已儲存！');
+// ══════════════════════════════════════════
+// FINANCE
+// ══════════════════════════════════════════
+const INCATS=['訂房收入','加床收入','餐飲收入','停車收入','活動收入','其他收入'];
+const EXCATS=['清潔耗材','備品採購','水電費','電信費','維修費','人事費用','食材採購','行銷廣告','稅費','其他支出'];
+function updFinCats(){const tp=$v('fn-tp');$('fn-cat').innerHTML=(tp==='income'?INCATS:EXCATS).map(c=>`<option>${c}</option>`).join('')}
+function openFinModal(){$('fn-dt').value=today();updFinCats();openM('m-add-fin')}
+function setupMonths(){
+  const s=$('f-month');if(!s)return;const d=new Date();let h='';
+  for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);const v=x.toISOString().substring(0,7);h+=`<option value="${v}">${x.getFullYear()}年${x.getMonth()+1}月</option>`}
+  s.innerHTML=h;
 }
-function openLINE(){
-  $('line-token').value=localStorage.getItem('line_token')||'';
-  $('ln-ci').checked=localStorage.getItem('line_ci')!=='0';
-  $('ln-co').checked=localStorage.getItem('line_co')!=='0';
-  $('ln-inv').checked=localStorage.getItem('line_inv')!=='0';
-  openM('m-line');
+function renderFin(){
+  const fin=ld(K.fin),mo=$v('f-month')||today().substring(0,7),tp=$v('f-type')||'all';
+  let data=fin.filter(f=>f.dt.startsWith(mo));
+  if(tp!=='all')data=data.filter(f=>f.tp===tp);
+  data=data.sort((a,b)=>b.dt.localeCompare(a.dt));
+  const mf=fin.filter(f=>f.dt.startsWith(mo));
+  const inc=mf.filter(f=>f.tp==='income').reduce((s,f)=>s+Number(f.amt),0);
+  const exp=mf.filter(f=>f.tp==='expense').reduce((s,f)=>s+Number(f.amt),0);
+  const net=inc-exp;
+  $('f-inc').textContent=fmtM(inc);$('f-exp').textContent=fmtM(exp);
+  const ne=$('f-net');ne.textContent=fmtM(net);ne.className=net>=0?'stat-vl inc':'stat-vl exp';
+  const tb=$('fin-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:28px;">無帳務記錄</td></tr>';return}
+  tb.innerHTML=data.map(f=>{const ii=f.tp==='income';return`<tr><td>${f.dt}</td><td><span class="tag" style="background:${ii?'#E9F7EF':'#FDEDEC'};color:${ii?'#1A9E52':'#C0392B'};">${f.cat}</span></td><td>${f.desc}</td><td class="${ii?'inc':'exp'}" style="font-family:'Noto Sans TC',sans-serif;font-size:17px;">${ii?'＋':'－'}${fmtM(f.amt)}</td><td style="font-size:12px;color:var(--txt3);">${f.note||'—'}</td><td><button class="btn btn-o btn-sm" onclick="delFin('${f.id}')">刪除</button></td></tr>`}).join('');
 }
-function sendLINE(msg){
-  const token=localStorage.getItem('line_token');
-  if(!token)return;
-  fetch('https://notify-api.line.me/api/notify',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded','Authorization':'Bearer '+token},
-    body:'message='+encodeURIComponent(msg)
-  }).catch(()=>{});
+function addFin(){
+  const dt=$v('fn-dt'),amt=+$v('fn-amt'),desc=$v('fn-desc').trim();
+  if(!dt||!amt||!desc)return alert('請填寫日期、金額和說明');
+  const fin=ld(K.fin);fin.push({id:uid('F'),dt,tp:$v('fn-tp'),cat:$v('fn-cat'),desc,amt,note:$v('fn-note')});
+  sv(K.fin,fin);['fn-amt','fn-desc','fn-note'].forEach(x=>$(x).value='');closeM('m-add-fin');
 }
-function testLINE(){
-  const token=$v('line-token');
-  if(!token)return alert('請先輸入 Token');
-  fetch('https://notify-api.line.me/api/notify',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded','Authorization':'Bearer '+token},
-    body:'message='+encodeURIComponent('\n【橋見幸福民宿】\n✅ LINE 通知測試成功！')
-  }).then(r=>{if(r.ok)alert('✅ 測試成功！請查看 LINE');else alert('❌ 發送失敗，請確認 Token 是否正確')})
-    .catch(()=>alert('❌ 網路錯誤，請確認 Token'));
+function delFin(id){if(!confirm('確認刪除？'))return;sv(K.fin,ld(K.fin).filter(f=>f.id!==id))}
+
+// ══════════════════════════════════════════
+// CLEANING
+// ══════════════════════════════════════════
+function openCleanModal(){
+  $('cl-dt').value=today();
+  $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');
+  openM('m-add-cl');
 }
-
-// ── 連線診斷
-async function runDiag(){
-  const el=$('diag-content');if(!el)return;
-  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);">🔄 檢測中…</div>';
-  const results=[];
-  const ok =(msg)=>`<div style="color:#1A9E52;padding:2px 0;">✅ ${msg}</div>`;
-  const err=(msg)=>`<div style="color:#C0392B;padding:2px 0;">❌ ${msg}</div>`;
-  const wrn=(msg)=>`<div style="color:#D4680A;padding:2px 0;">⚠️ ${msg}</div>`;
-  const inf=(msg)=>`<div style="color:var(--txt2);padding:2px 0;">ℹ️ ${msg}</div>`;
-  const hdr=(msg)=>`<div style="font-weight:600;margin:12px 0 4px;border-bottom:1px solid var(--border);padding-bottom:4px;">${msg}</div>`;
-
-  results.push(hdr('📡 網路與連線'));
-  results.push(navigator.onLine?ok('網路連線正常'):err('網路離線'));
-
-  try{
-    if(typeof firebase!=='undefined'&&firebase.app()){
-      results.push(ok('Firebase SDK 載入成功'));
-      results.push(inf('專案：'+firebase.app().options.projectId));
-    }
-  }catch(e){results.push(err('Firebase SDK 載入失敗'));}
-
-  results.push(hdr('🗄️ Firestore 資料庫'));
-  try{
-    const t0=Date.now();
-    const snap=await db.collection('bnb').doc('rooms').get();
-    const ms=Date.now()-t0;
-    if(snap.exists){
-      results.push(ok(`讀取成功（${ms}ms）`));
-      results.push(inf('房間資料：'+(snap.data().data||[]).length+' 筆'));
-    }else{results.push(wrn('連線正常，但尚無資料'));}
-  }catch(e){
-    results.push(e.code==='permission-denied'?err('權限被拒！請更新 Firebase 安全規則為 allow read, write: if true'):err('讀取失敗：'+e.message));
-  }
-  try{
-    const t0=Date.now();
-    await db.collection('bnb_test').doc('ping').set({t:Date.now()});
-    await db.collection('bnb_test').doc('ping').delete();
-    results.push(ok('寫入成功（'+(Date.now()-t0)+'ms）'));
-  }catch(e){
-    results.push(e.code==='permission-denied'?err('寫入被拒！請更新安全規則'):wrn('寫入測試失敗'));
-  }
-
-  results.push(hdr('📊 資料載入狀況'));
-  COL_KEYS.forEach(k=>{
-    const d=DB[k];
-    if(d===null)results.push(err(k+'：尚未載入'));
-    else if(d.length===0)results.push(wrn(k+'：空資料（0 筆）'));
-    else results.push(ok(k+'：'+d.length+' 筆'));
-  });
-
-  results.push(hdr('📱 裝置資訊'));
-  const ua=navigator.userAgent;
-  const br=ua.includes('Safari')&&!ua.includes('Chrome')?'Safari':ua.includes('Chrome')?'Chrome':ua.includes('Firefox')?'Firefox':'其他';
-  results.push(inf('瀏覽器：'+br));
-  results.push(inf('系統時間：'+new Date().toLocaleString('zh-TW')));
-  results.push(inf('網頁來源：'+location.hostname));
-  el.innerHTML=results.join('');
-}
-
-
-// 啟動 Firebase 監聽
-
 function renderCL(){
   const cl=ld(K.cl),t=today();
   const td=cl.filter(c=>c.dt===t);
@@ -1220,64 +792,80 @@ function addCL(){
 // ══════════════════════════════════════════
 // GUESTS
 // ══════════════════════════════════════════
+let editGID=null;
+function renderGuests(){
+  const guests=ld(K.guests),q=($('g-search')?.value||'').toLowerCase();
+  const data=q?guests.filter(g=>g.nm.toLowerCase().includes(q)||(g.ph&&g.ph.includes(q))||(g.em&&g.em.toLowerCase().includes(q))):guests;
+  const tb=$('g-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:28px;">無顧客資料</td></tr>';return}
+  tb.innerHTML=data.map(g=>`<tr><td><strong>${g.nm}</strong></td><td>${g.ph||'—'}</td><td style="font-size:12px;">${g.em||'—'}</td><td style="font-size:12px;font-family:monospace;">${g.idn||'—'}</td><td><span class="tag" style="background:var(--orange-p);color:var(--orange-dk);">${g.src||'—'}</span></td><td style="text-align:center;">${g.stays||0}次</td><td style="font-size:12px;color:var(--txt3);">${g.note||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditGuest('${g.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delGuest('${g.id}')">刪除</button></td></tr>`).join('');
+}
+function addGuest(){
+  const nm=$v('gu-nm').trim();if(!nm)return alert('請填寫姓名');
+  const guests=ld(K.guests);guests.push({id:uid('G'),nm,ph:$v('gu-ph'),em:$v('gu-em'),idn:$v('gu-id'),src:$v('gu-src'),note:$v('gu-note'),stays:0});
+  sv(K.guests,guests);['gu-nm','gu-ph','gu-em','gu-id','gu-note'].forEach(x=>$(x).value='');closeM('m-add-guest');
+}
+function openEditGuest(id){
+  const g=ld(K.guests).find(x=>x.id===id);if(!g)return;
+  editGID=id;$('eg-nm').value=g.nm;$('eg-ph').value=g.ph||'';$('eg-em').value=g.em||'';
+  $('eg-id').value=g.idn||'';Array.from($('eg-src').options).forEach(o=>o.selected=o.value===g.src);$('eg-note').value=g.note||'';
+  openM('m-edit-guest');
+}
+function saveGuest(){
+  const guests=ld(K.guests),i=guests.findIndex(g=>g.id===editGID);if(i<0)return;
+  guests[i]={...guests[i],nm:$v('eg-nm'),ph:$v('eg-ph'),em:$v('eg-em'),idn:$v('eg-id'),src:$v('eg-src'),note:$v('eg-note')};
+  sv(K.guests,guests);closeM('m-edit-guest');
+}
+function delGuest(id){if(!confirm('確認刪除此顧客？'))return;sv(K.guests,ld(K.guests).filter(g=>g.id!==id))}
 
+// ══════════════════════════════════════════
+// INVENTORY
+// ══════════════════════════════════════════
+let curInvF='all',adjInvId=null;
+function filterInv(cat,btn){curInvF=cat;document.querySelectorAll('.inv-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderInv(cat)}
+function renderInv(cat){
+  const inv=ld(K.inv);
+  const data=cat==='all'?inv:inv.filter(i=>i.cat===cat);
+  const low=inv.filter(i=>i.stk<=i.min);
+  const al=$('inv-alert'),dot=$('inv-dot');
+  if(low.length){al.style.display='block';if(dot)dot.style.display='block';$('inv-alert-items').innerHTML=low.map(i=>`<span class="tag" style="background:#FDEDEC;color:#922B21;margin:2px 4px 2px 0;">${i.nm} (${i.stk}/${i.min}${i.unit})</span>`).join('')}
+  else{al.style.display='none';if(dot)dot.style.display='none'}
+  const tb=$('inv-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:28px;">無備品記錄</td></tr>';return}
+  tb.innerHTML=data.map(i=>{
+    const r=i.min>0?i.stk/i.min:1;
+    const [sc,sl,bc]=i.stk<=i.min?['stock-low','庫存不足','#E74C3C']:i.stk<=i.min*1.5?['stock-med','偏低','#E67E22']:['stock-ok','充足','#27AE60'];
+    const w=Math.min(100,Math.round(r*100));
+    return`<tr><td><strong>${i.nm}</strong></td><td><span class="tag" style="background:var(--cream-dk);color:var(--txt2);">${i.cat}</span></td><td><span style="font-family:'Noto Sans TC',sans-serif;font-size:20px;font-weight:600;color:${bc};">${i.stk}</span><div class="prog" style="width:70px;display:inline-block;margin-left:8px;vertical-align:middle;"><div class="prog-f" style="width:${w}%;background:${bc};"></div></div></td><td>${i.unit}</td><td>${i.min} ${i.unit}</td><td><span class="tag" style="background:${i.stk<=i.min?'#FDEDEC':i.stk<=i.min*1.5?'#FDF2E4':'#E9F7EF'};color:${i.stk<=i.min?'#C0392B':i.stk<=i.min*1.5?'#D4680A':'#1A9E52'};">${sl}</span></td><td style="white-space:nowrap;"><button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="openAdj('${i.id}','${i.nm}')">調整庫存</button><button class="btn btn-d btn-sm" onclick="delInv('${i.id}')">刪除</button></td></tr>`;
+  }).join('');
+}
+function addInv(){
+  const nm=$v('iv-nm').trim();if(!nm)return alert('請填寫品項名稱');
+  const inv=ld(K.inv);inv.push({id:uid('I'),nm,cat:$v('iv-cat'),unit:$v('iv-unit')||'個',stk:+$v('iv-stk')||0,min:+$v('iv-min')||5});
+  sv(K.inv,inv);['iv-nm','iv-unit','iv-stk','iv-min'].forEach(x=>$(x).value='');closeM('m-add-inv');
+}
+function openAdj(id,nm){adjInvId=id;$('adj-ttl').textContent=`調整庫存：${nm}`;$('adj-amt').value='';openM('m-adj-stk')}
+function applyAdj(){
+  const inv=ld(K.inv),i=inv.findIndex(x=>x.id===adjInvId);if(i<0)return;
+  const tp=$v('adj-tp'),amt=+$v('adj-amt')||0;
+  if(tp==='add')inv[i].stk+=amt;else if(tp==='sub')inv[i].stk=Math.max(0,inv[i].stk-amt);else inv[i].stk=amt;
+  sv(K.inv,inv);closeM('m-adj-stk');
+}
+function delInv(id){if(!confirm('確認刪除？'))return;sv(K.inv,ld(K.inv).filter(i=>i.id!==id))}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+function initDate(){
+  const d=new Date(),dy=['日','一','二','三','四','五','六'];
+  const s=`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} 星期${dy[d.getDay()]}`;
+  $('sb-date').textContent=s;$('hdr-date').textContent=s;
+}
+const _openM=openM;
+window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
+
+// 啟動 Firebase 監聽
 startListeners();
-
-// 開啟診斷 modal 時自動執行
-const _baseOpenM = window.openM;
-window.openM = function(id){
-  _baseOpenM(id);
-  if(id==='m-diag') setTimeout(runDiag, 150);
-};
-</script>
-
-<script>
-(function(){
-  var c=document.createElement('canvas');
-  c.width=512;c.height=512;
-  var ctx=c.getContext('2d');
-
-  // Background gradient
-  var g=ctx.createLinearGradient(0,0,512,512);
-  g.addColorStop(0,'#FF8C4B');g.addColorStop(1,'#D4541A');
-  ctx.beginPath();
-  var r=110,w=512,h=512;
-  ctx.moveTo(r,0);ctx.lineTo(w-r,0);ctx.quadraticCurveTo(w,0,w,r);
-  ctx.lineTo(w,h-r);ctx.quadraticCurveTo(w,h,w-r,h);
-  ctx.lineTo(r,h);ctx.quadraticCurveTo(0,h,0,h-r);
-  ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();
-  ctx.fillStyle=g;ctx.fill();
-
-  // Bridge arch
-  ctx.strokeStyle='white';ctx.lineWidth=22;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(136,330);
-  ctx.quadraticCurveTo(256,170,376,330);ctx.stroke();
-
-  // Pillars
-  [[172,330,172,385],[256,228,256,385],[340,330,340,385]].forEach(function(l){
-    ctx.beginPath();ctx.moveTo(l[0],l[1]);ctx.lineTo(l[2],l[3]);ctx.stroke();
-  });
-
-  // Base
-  ctx.beginPath();ctx.moveTo(118,385);ctx.lineTo(394,385);ctx.stroke();
-
-  // Heart
-  ctx.fillStyle='white';
-  ctx.beginPath();
-  var hx=256,hy=168;
-  ctx.moveTo(hx,hy+28);
-  ctx.bezierCurveTo(hx,hy+12,hx-52,hy-8,hx-52,hy+8);
-  ctx.bezierCurveTo(hx-52,hy+28,hx,hy+56,hx,hy+56);
-  ctx.bezierCurveTo(hx,hy+56,hx+52,hy+28,hx+52,hy+8);
-  ctx.bezierCurveTo(hx+52,hy-8,hx,hy+12,hx,hy+28);
-  ctx.fill();
-
-  var png=c.toDataURL('image/png');
-  var al=document.getElementById('apple-touch-icon-link');
-  var fl=document.getElementById('favicon-link');
-  if(al)al.href=png;
-  if(fl)fl.href=png;
-})();
 </script>
 </body>
 </html>
