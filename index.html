@@ -1112,58 +1112,6 @@ function renderCal(){
 }
 
 // ── LINE 通知
-function saveLINE(){
-  localStorage.setItem('line_token',$v('line-token'));
-  localStorage.setItem('line_ci',$('ln-ci').checked?'1':'0');
-  localStorage.setItem('line_co',$('ln-co').checked?'1':'0');
-  localStorage.setItem('line_inv',$('ln-inv').checked?'1':'0');
-  closeM('m-line');alert('✅ LINE 通知設定已儲存！');
-}
-function openLINE(){
-  $('line-token').value=localStorage.getItem('line_token')||'';
-  $('ln-ci').checked=localStorage.getItem('line_ci')!=='0';
-  $('ln-co').checked=localStorage.getItem('line_co')!=='0';
-  $('ln-inv').checked=localStorage.getItem('line_inv')!=='0';
-  openM('m-line');
-}
-function sendLINE(msg){
-  const token=localStorage.getItem('line_token');
-  if(!token)return;
-  fetch('https://notify-api.line.me/api/notify',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded','Authorization':'Bearer '+token},
-    body:'message='+encodeURIComponent(msg)
-  }).catch(()=>{});
-}
-function testLINE(){
-  const token=$v('line-token');
-  if(!token)return alert('請先輸入 Token');
-  fetch('https://notify-api.line.me/api/notify',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded','Authorization':'Bearer '+token},
-    body:'message='+encodeURIComponent('\n【橋見幸福民宿】\n✅ LINE 通知測試成功！')
-  }).then(r=>{if(r.ok)alert('✅ 測試成功！請查看 LINE');else alert('❌ 發送失敗，請確認 Token 是否正確')})
-    .catch(()=>alert('❌ 網路錯誤，請確認 Token'));
-}
-  if(s['today-in'] !== false){
-    bks.filter(b=>b.ci===t).forEach(b=>{
-      const r=rooms.find(x=>x.id===b.rid);
-      new Notification('📥 橋見幸福民宿 - 今日入住', {
-        body: `${b.nm}　${r?r.name:''}　${b.g}人`,
-        tag:'ci_'+(b._uid||b.id)
-      });
-    });
-  }
-  if(s['today-out'] !== false){
-    bks.filter(b=>b.co===t&&b.st==='checkedin').forEach(b=>{
-      const r=rooms.find(x=>x.id===b.rid);
-      new Notification('📤 橋見幸福民宿 - 今日退房', {
-        body: `${b.nm}　${r?r.name:''}　${fmtM(b.amt)}`,
-        tag:'co_'+(b._uid||b.id)
-      });
-    });
-  }
-}
 
 // ── 連線診斷
 async function runDiag(){
