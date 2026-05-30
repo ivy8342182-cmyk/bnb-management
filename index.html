@@ -175,7 +175,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   <div class="ld-title">橋見幸福民宿</div>
   <div class="ld-sub" id="ld-sub-txt">正在連線雲端資料…</div>
   <div class="ld-spin"></div>
-  <button onclick="startApp()" style="margin-top:28px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;">略過，直接進入</button>
+  <button onclick="try{startApp();}catch(e){document.getElementById('load-ov').style.display='none';}" style="margin-top:28px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;">略過，直接進入</button>
 </div>
 
 <button id="mob-btn" onclick="toggleSB()">☰</button>
@@ -634,6 +634,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 </div>
 
 <script>
+// 全域錯誤捕捉 - 確保loading畫面不會卡住
+window.onerror = function(msg, src, line, col, err){
+  console.error('JS Error:', msg, 'at', src, line);
+  // 強制隱藏loading畫面
+  const ov = document.getElementById('load-ov');
+  if(ov){ ov.style.display='none'; }
+  return false;
+};
+
 // ══════════════════════════════════════════
 // FIREBASE 初始化
 // ══════════════════════════════════════════
@@ -811,8 +820,10 @@ function migrateBookings(){
 }
 
 function startListeners() {
-  // 8秒後強制啟動，避免網路問題卡住
-  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 8000);
+  // 5秒後強制啟動
+  setTimeout(()=>{ if(!appReady){ setSyncError(); startApp(); } }, 5000);
+  // 10秒後強制隱藏（最後保險）
+  setTimeout(()=>{ const ov=document.getElementById('load-ov');if(ov)ov.style.display='none'; }, 10000);
 
   COL_KEYS.forEach(k => {
     db.collection('bnb').doc(k).onSnapshot(snap => {
