@@ -151,7 +151,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   <div class="pg-header">
     <h2 id="pg-title">總覽儀表板</h2>
     <div style="display:flex;align-items:center;gap:14px;">
-      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span></div>
       <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
@@ -753,10 +753,11 @@ function updFinCats(){const tp=$v('fn-tp');$('fn-cat').innerHTML=(tp==='income'?
 function openFinModal(){$('fn-dt').value=today();updFinCats();openM('m-add-fin')}
 function setupMonths(){
   const s=$('f-month');if(!s)return;const d=new Date();let h='';
-  for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);const v=x.toISOString().substring(0,7);h+=`<option value="${v}">${x.getFullYear()}年${x.getMonth()+1}月</option>`}
+  for(let i=0;i<12;i++){const x=new Date(d.getFullYear(),d.getMonth()-i,1);const v=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');h+=`<option value="${v}">${x.getFullYear()}年${x.getMonth()+1}月</option>`}
   s.innerHTML=h;
 }
 function renderFin(){
+  if(!$('f-month') || !$('f-month').options.length) setupMonths();
   const fin=ld(K.fin),mo=$v('f-month')||today().substring(0,7),tp=$v('f-type')||'all';
   let data=fin.filter(f=>f.dt.startsWith(mo));
   if(tp!=='all')data=data.filter(f=>f.tp===tp);
