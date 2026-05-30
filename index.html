@@ -540,9 +540,20 @@ function getDefaultData(k) {
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
 const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory'];
-let loadedCount = 0;
 
 function startListeners() {
+  const loaded = new Set();
+
+  function onAllLoaded() {
+    const ov = document.getElementById('load-ov');
+    if (ov) { ov.classList.add('hide'); setTimeout(()=>{ if(ov.parentNode)ov.remove(); }, 600); }
+    initDate();
+    setupMonths();
+    renderDash();
+    const inv = DB.inventory || [];
+    if (inv.some(i=>i.stk<=i.min)) { const d=$('inv-dot'); if(d) d.style.display='block'; }
+  }
+
   COL_KEYS.forEach(k => {
     db.collection('bnb').doc(k).onSnapshot(snap => {
       if (snap.exists) {
@@ -550,27 +561,34 @@ function startListeners() {
       } else {
         if (DB[k] === null) DB[k] = [];
       }
-      loadedCount++;
-      if (loadedCount >= COL_KEYS.length) {
-        // 全部載入完成，隱藏 loading
-        const ov = document.getElementById('load-ov');
-        if (ov) { ov.classList.add('hide'); setTimeout(()=>ov.remove(), 600); }
-        initDate();
-        setupMonths();
-        renderDash();
-        // 低庫存紅點
-        const inv = DB.inventory || [];
-        if (inv.some(i=>i.stk<=i.min)) { const d=$('inv-dot'); if(d) d.style.display='block'; }
-      }
-      // 已載入後，即時更新當前頁面
-      if (loadedCount >= COL_KEYS.length) {
+
+      const firstLoad = !loaded.has(k);
+      loaded.add(k);
+
+      if (firstLoad && loaded.size === COL_KEYS.length) {
+        // 所有文件第一次載入完成
+        onAllLoaded();
+      } else if (loaded.size === COL_KEYS.length) {
+        // 後續更新：刷新當前頁面
         renderSec(curSec);
+        setSyncing(false);
       }
     }, err => {
-      console.error('Firestore error:', err);
+      console.error('Firestore error:', k, err);
       setSyncError();
+      if (DB[k] === null) DB[k] = [];
+      loaded.add(k);
+      if (loaded.size === COL_KEYS.length) onAllLoaded();
     });
   });
+
+  // 10秒保險：若還未完成載入就強制顯示
+  setTimeout(() => {
+    if (loaded.size < COL_KEYS.length) {
+      setSyncError();
+      onAllLoaded();
+    }
+  }, 10000);
 }
 
 // ══════════════════════════════════════════
