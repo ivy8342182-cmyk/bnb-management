@@ -373,7 +373,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="g2"><div class="fg"><label>日期</label><input type="date" id="cl-dt"></div>
     <div class="fg"><label>房間</label><select id="cl-rm"></select></div></div>
     <div class="g2"><div class="fg"><label>清潔類型</label><select id="cl-tp"><option>一般清潔</option><option>退房清潔</option><option>深度清潔</option><option>備品補充</option><option>床單更換</option><option>浴室清潔</option></select></div>
-    <div class="fg"><label>負責人員</label><select id="cl-st"><option>小美</option><option>小華</option><option>大明</option><option>待分配</option></select></div></div>
+    <div class="fg"><label>負責人員</label><select id="cl-st"></select></div></div>
     <div class="fg"><label>備註</label><textarea id="cl-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-cl')">取消</button><button class="btn btn-p" onclick="addCL()">新增任務</button></div>
   </div>
@@ -449,7 +449,7 @@ const db = firebase.firestore();
 // 資料層：本機快取 + Firestore 同步
 // ══════════════════════════════════════════
 const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory'};
-const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null};
+const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null, staff:null};
 
 // 讀取本機快取
 const ld = k => DB[k] || [];
@@ -539,7 +539,7 @@ function getDefaultData(k) {
 // ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
-const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory'];
+const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
 let loadedKeys = new Set();
 
 function startListeners() {
@@ -740,7 +740,7 @@ function setupMonths(){
   s.innerHTML=h;
 }
 function renderFin(){
-  const fin=ld(K.fin),mo=$v('f-month')||today().substring(0,7),tp=$v('f-type')||'all';
+  const fin=ld(K.fin)||[],mo=$v('f-month')||today().substring(0,7),tp=$v('f-type')||'all';
   let data=fin.filter(f=>f.dt.startsWith(mo));
   if(tp!=='all')data=data.filter(f=>f.tp===tp);
   data=data.sort((a,b)=>b.dt.localeCompare(a.dt));
@@ -768,6 +768,8 @@ function delFin(id){if(!confirm('確認刪除？'))return;sv(K.fin,ld(K.fin).fil
 function openCleanModal(){
   $('cl-dt').value=today();
   $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');
+  const staff=DB.staff&&DB.staff.length?DB.staff:['小美','小華','大明','待分配'];
+  $('cl-st').innerHTML=staff.map(s=>`<option>${s}</option>`).join('');
   openM('m-add-cl');
 }
 function renderCL(){
