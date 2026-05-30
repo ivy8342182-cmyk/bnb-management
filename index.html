@@ -4,51 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>橋見幸福民宿 · 管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-#load-ov{position:fixed;inset:0;background:var(--orange);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#load-ov{position:fixed;inset:0;background:#130800;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
 #load-ov.hide{opacity:0;pointer-events:none}
-.ld-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
-.ld-sub{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:28px;letter-spacing:.06em}
-.ld-spin{width:34px;height:34px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.ld-title{font-family:'Noto Sans TC',sans-serif;font-size:20px;font-weight:600;color:#F0E0B0;margin-bottom:6px}
+.ld-sub{font-size:12px;color:rgba(240,220,160,.4);margin-bottom:28px;letter-spacing:.08em}
+.ld-spin{width:34px;height:34px;border:2px solid rgba(196,154,60,.15);border-top-color:#E8C060;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-#sync-dot{width:7px;height:7px;border-radius:50%;background:#2ECC71;display:inline-block;margin-right:5px;flex-shrink:0;transition:background .3s}
+#sync-dot{width:7px;height:7px;border-radius:50%;background:#4E7D58;display:inline-block;margin-right:5px;flex-shrink:0;transition:background .3s}
 #sync-dot.syncing{background:#E8C060;animation:blink .7s ease infinite}
 #sync-dot.err{background:#E05C5C}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
 <style>
-:root{
-  --sb:#FFFFFF;--sb-hover:#FFF5EF;
-  --bg:#F5F6F8;--white:#FFFFFF;
-  --orange:#F26522;--orange-l:#FF8C4B;--orange-dk:#D4541A;--orange-p:#FFF2EC;--orange-b:rgba(242,101,34,.12);
-  --txt:#1A1A2E;--txt2:#4A4A6A;--txt3:#9090A8;
-  --border:#EAEAF0;--border2:#D8D8E8;
-  --green:#2ECC71;--red:#E74C3C;
-  --r:12px;--sh:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);--sh-lg:0 4px 8px rgba(0,0,0,.06),0 12px 40px rgba(0,0,0,.1);
-}
+:root{--sb:#130800;--sb-hover:#2A1208;--cream:#FBF4E8;--cream-dk:#EFE3CC;--amber:#C47B2B;--amber-l:#E8C060;--amber-p:#FFF4E0;--sage:#6B9E72;--txt:#2D1500;--txt2:#7A5438;--txt3:#AE8C70;--white:#FFF;--border:#E8D5B0;--r:10px;--sh:0 2px 12px rgba(60,30,0,.08)}
 .num-font{font-family:'Noto Sans TC',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
-#sidebar{width:220px;min-height:100vh;background:var(--white);color:var(--txt);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s;border-right:1px solid var(--border);box-shadow:2px 0 16px rgba(0,0,0,.04)}
-.sb-logo{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
-.sb-logo h1{font-size:15px;font-weight:700;color:var(--txt);line-height:1.4;display:flex;align-items:center;gap:8px}
-.sb-logo p{font-size:11px;color:var(--txt3);margin-top:2px}
-.sb-date{padding:8px 20px;border-bottom:1px solid var(--border);font-size:11px;color:var(--txt3)}
+body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--cream);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
+#sidebar{width:220px;min-height:100vh;background:var(--sb);background-image:radial-gradient(ellipse at 25% 15%,rgba(180,90,20,.18) 0%,transparent 55%),radial-gradient(ellipse at 75% 85%,rgba(100,40,5,.3) 0%,transparent 55%);color:#F5E6D0;display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s;border-right:1px solid rgba(196,154,60,.07)}
+.sb-logo{padding:24px 20px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-logo h1{font-family:'Noto Sans TC',sans-serif;font-size:16px;font-weight:600;color:#F0E0C0;line-height:1.4;letter-spacing:.02em}
+.sb-logo p{font-size:11px;color:rgba(240,224,192,.4);margin-top:2px;letter-spacing:.05em}
+.sb-date{padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;color:rgba(240,224,192,.45);letter-spacing:.04em}
 .sb-nav{flex:1;padding:10px 0;overflow-y:auto}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:2px 8px;cursor:pointer;color:var(--txt2);transition:all .2s;font-size:13.5px;border-radius:10px;border-left:none;user-select:none}
-.nav-item:hover{background:var(--bg);color:var(--txt)}
-.nav-item.active{background:var(--orange-p);color:var(--orange-dk);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;cursor:pointer;color:rgba(240,224,192,.6);transition:all .22s;font-size:14px;border-left:3px solid transparent;user-select:none;border-radius:0}
+.nav-item:hover{background:var(--sb-hover);color:rgba(240,224,192,.9)}
+.nav-item.active{background:rgba(196,154,60,.15);color:#F0D080;border-left-color:#E8C060;box-shadow:inset 0 0 16px rgba(196,154,60,.06)}
 .nav-icon{width:20px;text-align:center;font-size:15px}
 #main{margin-left:220px;flex:1;min-height:100vh}
-.pg-header{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.pg-header{background:rgba(251,244,232,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:15px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .pg-header h2{font-family:'Noto Sans TC',sans-serif;font-size:19px;font-weight:600}
 .pg-content{padding:22px 28px}
 .section{display:none}.section.active{display:block}
 .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--sh)}
-.card-title{font-family:'Noto Sans TC',sans-serif;font-size:15px;font-weight:600;color:var(--txt);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.card-title{font-family:'Noto Sans TC',sans-serif;font-size:15px;font-weight:600;color:var(--txt);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--cream-dk)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
@@ -58,60 +50,55 @@ body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;ba
 .stat-vl{font-family:'Noto Sans TC',sans-serif;font-size:34px;font-weight:600;line-height:1;color:var(--txt)}
 .stat-sb{font-size:12px;color:var(--txt2);margin-top:4px}
 .room-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:15px;cursor:pointer;transition:all .2s;position:relative}
-.room-card:hover{transform:translateY(-2px);box-shadow:var(--sh-lg)}
-.room-card.occupied{border-top:3px solid #F26522}.room-card.available{border-top:3px solid #2ECC71}
-.room-card.reserved{border-top:3px solid #3498DB}.room-card.cleaning{border-top:3px solid #9B59B6}
-.room-card.maintenance{border-top:3px solid #E74C3C}
+.room-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(60,30,0,.12)}
+.room-card.occupied{border-top:4px solid #E67E22}.room-card.available{border-top:4px solid #27AE60}
+.room-card.reserved{border-top:4px solid #2980B9}.room-card.cleaning{border-top:4px solid #8E44AD}
+.room-card.maintenance{border-top:4px solid #E74C3C}
 .r-name{font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:600}.r-num{font-size:11px;color:var(--txt3);margin-bottom:8px}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
-.b-ok{background:#EAFAF1;color:#1E8449}.b-occ{background:#FEF0E8;color:#D4540A}
+.b-ok{background:#E9F7EF;color:#1E8449}.b-occ{background:#FDF2E4;color:#D4680A}
 .b-res{background:#EBF5FB;color:#1A5276}.b-cln{background:#F5EEF8;color:#6C3483}
 .b-mtn{background:#FDEDEC;color:#922B21}
 .r-info{margin-top:8px;font-size:12px;color:var(--txt2);line-height:1.6}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s;font-family:inherit}
-.btn-p{background:var(--orange);color:#fff;box-shadow:0 2px 8px rgba(242,101,34,.25)}.btn-p:hover{background:var(--orange-dk)}
-.btn-g{background:#2ECC71;color:#fff;box-shadow:0 2px 8px rgba(46,204,113,.2)}.btn-g:hover{background:#27AE60}
-.btn-o{background:transparent;color:var(--txt2);border:1px solid var(--border2)}.btn-o:hover{background:var(--bg)}
+.btn-p{background:var(--amber);color:#fff}.btn-p:hover{background:#A86820}
+.btn-g{background:var(--sage);color:#fff}.btn-g:hover{background:#4A7050}
+.btn-o{background:transparent;color:var(--txt2);border:1px solid var(--border)}.btn-o:hover{background:var(--cream-dk)}
 .btn-d{background:#E74C3C;color:#fff}.btn-d:hover{background:#C0392B}
 .btn-sm{padding:5px 10px;font-size:12px}
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 14px;font-size:12px;font-weight:500;color:var(--txt3);background:var(--bg);border-bottom:1px solid var(--border)}
-td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:middle}
+th{text-align:left;padding:10px 14px;font-size:12px;font-weight:500;color:var(--txt3);background:var(--cream);border-bottom:1px solid var(--border)}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--cream-dk);color:var(--txt);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--orange-p)}
+tr:hover td{background:var(--amber-p)}
 .fg{margin-bottom:14px}
 label{display:block;font-size:13px;font-weight:500;color:var(--txt2);margin-bottom:5px}
 input,select,textarea{width:100%;padding:9px 13px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--txt);background:var(--white);outline:none;transition:border .2s}
-input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(242,101,34,.1)}
-.modal-ov{display:none;position:fixed;inset:0;background:rgba(26,26,46,.45);z-index:200;align-items:center;justify-content:center}
+input:focus,select:focus,textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(196,123,43,.1)}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(30,15,0,.5);z-index:200;align-items:center;justify-content:center}
 .modal-ov.open{display:flex}
 .modal{background:var(--white);border-radius:14px;padding:26px;width:500px;max-width:90vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(30,15,0,.3)}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .modal-ttl{font-family:'Noto Sans TC',sans-serif;font-size:18px;font-weight:600}
-.modal-x{width:30px;height:30px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--txt2)}
-.modal-x:hover{background:var(--border2)}
-#mob-btn{display:none;position:fixed;top:14px;left:14px;z-index:300;width:40px;height:40px;background:var(--orange);border:none;border-radius:10px;cursor:pointer;color:#fff;font-size:18px;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(242,101,34,.35)}
+.modal-x{width:30px;height:30px;border-radius:50%;background:var(--cream-dk);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--txt2)}
+.modal-x:hover{background:var(--border)}
+#mob-btn{display:none;position:fixed;top:14px;left:14px;z-index:300;width:40px;height:40px;background:#130800;border:1px solid rgba(196,154,60,.2);border-radius:8px;cursor:pointer;color:#E8C060;font-size:18px;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
-.prog{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:5px}
+.prog{height:6px;background:var(--cream-dk);border-radius:3px;overflow:hidden;margin-top:5px}
 .prog-f{height:100%;border-radius:3px;transition:width .3s}
 .inc{color:#1E8449;font-weight:500;font-family:'Noto Sans TC',sans-serif}.exp{color:#C0392B;font-weight:500;font-family:'Noto Sans TC',sans-serif}
-.clean-task{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:8px;margin-bottom:7px;background:var(--bg);border:1px solid var(--border);transition:all .2s}
-.clean-task.done{opacity:.55;background:var(--border)}
+.clean-task{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:8px;margin-bottom:7px;background:var(--cream);border:1px solid var(--border);transition:all .2s}
+.clean-task.done{opacity:.6;background:var(--cream-dk)}
 .chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:12px}
 .chk.checked{background:var(--sage);border-color:var(--sage);color:#fff}
 .ndot{width:8px;height:8px;border-radius:50%;background:#E74C3C;margin-left:auto}
 .sh-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .sh-ttl{font-family:'Noto Sans TC',sans-serif;font-size:17px;font-weight:600}
-.today-banner{background:linear-gradient(135deg,#F26522 0%,#FF8C4B 100%);border-radius:var(--r);padding:20px 26px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(242,101,34,.3)}
-.today-banner h3{font-size:12px;color:rgba(255,255,255,.7);letter-spacing:.06em;margin-bottom:5px}
-.today-banner .big{font-size:28px;font-weight:700;color:#fff;line-height:1}
+.today-banner{background:#130800;background-image:radial-gradient(ellipse at 65% 50%,rgba(196,154,60,.2) 0%,transparent 60%);border:1px solid rgba(196,154,60,.12);border-radius:var(--r);padding:18px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(10,5,0,.18)}
+.today-banner h3{font-family:'Noto Sans TC',sans-serif;font-size:12px;color:rgba(240,220,160,.5);letter-spacing:.1em;margin-bottom:5px}
+.today-banner .big{font-family:'Noto Sans TC',sans-serif;font-size:30px;font-weight:600;color:#F0E0B0;line-height:1}
 .mt16{margin-top:16px}.mb16{margin-bottom:16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-#load-ov.hide{opacity:0;pointer-events:none}
-#sync-dot.syncing{background:#E8C060;animation:blink .7s ease infinite}
-#sync-dot.err{background:#E05C5C}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 @media(max-width:768px){
   #sidebar{transform:translateX(-100%)}#sidebar.open{transform:translateX(0)}
@@ -130,18 +117,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   <div class="ld-spin"></div>
 </div>
 
-<div id="load-ov" style="position:fixed;inset:0;background:var(--orange);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s;">
-  <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px;">橋見幸福民宿</div>
-  <div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:28px;">正在連線雲端資料…</div>
-  <div style="width:34px;height:34px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;"></div>
-  <button onclick="try{startApp();}catch(e){document.getElementById('load-ov').style.display='none';}" style="margin-top:28px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;cursor:pointer;">略過，直接進入</button>
-</div>
 <button id="mob-btn" onclick="toggleSB()">☰</button>
 
 <aside id="sidebar">
   <div class="sb-logo">
-    <h1><span style="width:28px;height:28px;background:var(--orange);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🌿</span>橋見幸福民宿</h1>
-    <p style="margin-top:6px;padding-left:36px;">內部營運管理系統</p>
+    <h1>橋見幸福民宿</h1>
+    <p>內部營運管理系統</p>
   </div>
   <div class="sb-date" id="sb-date"></div>
   <nav class="sb-nav">
@@ -154,7 +135,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);">
-    <div style="font-size:11px;color:var(--txt3);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
+    <div style="font-size:11px;color:rgba(240,220,160,.25);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
   </div>
 </aside>
 
@@ -163,7 +144,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <h2 id="pg-title">總覽儀表板</h2>
     <div style="display:flex;align-items:center;gap:14px;">
       <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div>
-      <div style="display:flex;align-items:center;gap:14px;"><div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="openM('m-diag')"><span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#2ECC71;display:inline-block;"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);">已同步</span></div><div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div></div>
+      <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
   <div class="pg-content">
@@ -174,13 +155,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
         <div><h3>今日概況</h3><div class="big" id="today-disp"></div></div>
         <div style="display:flex;gap:28px;align-items:center;">
           <div style="text-align:center;">
-            <div style="font-family:'Noto Sans TC',sans-serif;font-size:32px;font-weight:600;color:#fff;line-height:1;" id="d-ci">0</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.75);letter-spacing:.06em;margin-top:3px;">今日入住</div>
+            <div style="font-family:'Noto Sans TC',sans-serif;font-size:32px;font-weight:600;color:#E8C060;line-height:1;" id="d-ci">0</div>
+            <div style="font-size:11px;color:rgba(240,220,160,.45);letter-spacing:.06em;margin-top:3px;">今日入住</div>
           </div>
           <div style="width:1px;height:36px;background:rgba(196,154,60,.2);"></div>
           <div style="text-align:center;">
-            <div style="font-family:'Noto Sans TC',sans-serif;font-size:32px;font-weight:600;color:#fff;line-height:1;" id="d-co">0</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.75);letter-spacing:.06em;margin-top:3px;">今日退房</div>
+            <div style="font-family:'Noto Sans TC',sans-serif;font-size:32px;font-weight:600;color:#E8C060;line-height:1;" id="d-co">0</div>
+            <div style="font-size:11px;color:rgba(240,220,160,.45);letter-spacing:.06em;margin-top:3px;">今日退房</div>
           </div>
         </div>
       </div>
@@ -242,9 +223,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
         <button class="btn btn-p" onclick="openFinModal()">＋ 新增記錄</button>
       </div>
       <div class="g3" style="margin-bottom:18px;">
-        <div class="stat" style="border-top:3px solid #2ECC71;"><div class="stat-lb">本月收入</div><div class="stat-vl inc" id="f-inc">$0</div></div>
+        <div class="stat" style="border-top:3px solid #27AE60;"><div class="stat-lb">本月收入</div><div class="stat-vl inc" id="f-inc">$0</div></div>
         <div class="stat" style="border-top:3px solid #E74C3C;"><div class="stat-lb">本月支出</div><div class="stat-vl exp" id="f-exp">$0</div></div>
-        <div class="stat" style="border-top:3px solid var(--orange);"><div class="stat-lb">本月淨額</div><div class="stat-vl" id="f-net">$0</div></div>
+        <div class="stat" style="border-top:3px solid var(--amber);"><div class="stat-lb">本月淨額</div><div class="stat-vl" id="f-net">$0</div></div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
         <select id="f-month" onchange="renderFin()" style="width:auto;"></select>
@@ -269,7 +250,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
         <div class="card"><div class="card-title">近期安排（7天內）</div><div id="cl-upcoming"></div></div>
       </div>
       <div class="card mt16" style="padding:0;overflow:hidden;">
-        <div style="padding:15px 20px;border-bottom:1px solid var(--border);font-weight:600;font-family:'Noto Sans TC',sans-serif;font-size:14px;">所有排班記錄</div>
+        <div style="padding:15px 20px;border-bottom:1px solid var(--cream-dk);font-weight:600;font-family:'Noto Sans TC',sans-serif;font-size:14px;">所有排班記錄</div>
         <div class="tw"><table><thead><tr><th>日期</th><th>房間</th><th>類型</th><th>人員</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead>
         <tbody id="cl-tbody"></tbody></table></div>
       </div>
@@ -641,9 +622,9 @@ function renderDash(){
   const d=new Date();const dy=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   $('today-disp').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${dy[d.getDay()]}`;
   const ciL=$('d-ci-list');
-  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
+  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--cream-dk);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
   const coL=$('d-co-list');
-  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
+  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--cream-dk);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
   const low=inv.filter(i=>i.stk<=i.min);
   const ld2=$('d-low');
   if(low.length){ld2.style.display='block';$('d-low-items').innerHTML=low.map(i=>`<div style="padding:5px 0;font-size:13px;">⚠️ <strong>${i.nm}</strong>：剩 ${i.stk} ${i.unit}（需 ${i.min} ${i.unit}）</div>`).join('')}
@@ -662,7 +643,7 @@ function renderRooms(){
     const bk=bks.find(b=>b.rid===r.id&&(b.st==='checkedin'||(b.st==='confirmed'&&b.ci<=t&&b.co>t)));
     let info=`${r.type} · 最多${r.cap}人<br>每晚 ${fmtM(r.price)}`;
     if(bk)info+=`<br><span style="color:var(--amber);">👤 ${bk.nm} · 退: ${fmtD(bk.co)}</span>`;
-    return`<div class="room-card ${r.status}" onclick="openRD(${r.id})"><div class="room-card-top"></div><div class="room-card-body"><div class="r-num">No.${r.num}</div><div class="r-name">${r.name}</div><div style="margin:7px 0;"><span class="badge ${SBDG[r.status]}">${SLBL[r.status]}</span></div><div class="r-info">${info}</div>${r.note?`<div class="r-note" style="background:var(--bg);border-left:2px solid var(--orange);border-radius:6px;padding:6px 10px;margin-top:8px;font-size:11px;color:var(--txt3);">📝 ${r.note}</div>`:''}</div></div>`;
+    return`<div class="room-card ${r.status}" onclick="openRD(${r.id})"><div class="room-card-top"></div><div class="room-card-body"><div class="r-num">No.${r.num}</div><div class="r-name">${r.name}</div><div style="margin:7px 0;"><span class="badge ${SBDG[r.status]}">${SLBL[r.status]}</span></div><div class="r-info">${info}</div>${r.note?`<div class="r-note">📝 ${r.note}</div>`:''}</div></div>`;
   }).join('');
 }
 function openRD(id){
@@ -687,7 +668,7 @@ function addRoom(){
 // BOOKINGS
 // ══════════════════════════════════════════
 const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',cancelled:'已取消'};
-const BSCLR={confirmed:{bg:'#EBF5FB',c:'#1A5276'},checkedin:{bg:'#E9F7EF',c:'#1A9E52'},checkedout:{bg:'#F4F6F7',c:'#717D7E'},cancelled:{bg:'#FDEDEC',c:'#C0392B'}};
+const BSCLR={confirmed:{bg:'#EBF5FB',c:'#1A5276'},checkedin:{bg:'#E9F7EF',c:'#1E8449'},checkedout:{bg:'#F4F6F7',c:'#717D7E'},cancelled:{bg:'#FDEDEC',c:'#922B21'}};
 let curBKF='all';
 function filterBK(f,btn){curBKF=f;document.querySelectorAll('.bk-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBK(f)}
 function renderBK(f){
@@ -765,7 +746,7 @@ function renderFin(){
   const ne=$('f-net');ne.textContent=fmtM(net);ne.className=net>=0?'stat-vl inc':'stat-vl exp';
   const tb=$('fin-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:28px;">無帳務記錄</td></tr>';return}
-  tb.innerHTML=data.map(f=>{const ii=f.tp==='income';return`<tr><td>${f.dt}</td><td><span class="tag" style="background:${ii?'#E9F7EF':'#FDEDEC'};color:${ii?'#1A9E52':'#C0392B'};">${f.cat}</span></td><td>${f.desc}</td><td class="${ii?'inc':'exp'}" style="font-family:'Noto Sans TC',sans-serif;font-size:17px;">${ii?'＋':'－'}${fmtM(f.amt)}</td><td style="font-size:12px;color:var(--txt3);">${f.note||'—'}</td><td><button class="btn btn-o btn-sm" onclick="delFin('${f.id}')">刪除</button></td></tr>`}).join('');
+  tb.innerHTML=data.map(f=>{const ii=f.tp==='income';return`<tr><td>${f.dt}</td><td><span class="tag" style="background:${ii?'#E9F7EF':'#FDEDEC'};color:${ii?'#1E8449':'#922B21'};">${f.cat}</span></td><td>${f.desc}</td><td class="${ii?'inc':'exp'}" style="font-family:'Noto Sans TC',sans-serif;font-size:17px;">${ii?'＋':'－'}${fmtM(f.amt)}</td><td style="font-size:12px;color:var(--txt3);">${f.note||'—'}</td><td><button class="btn btn-o btn-sm" onclick="delFin('${f.id}')">刪除</button></td></tr>`}).join('');
 }
 function addFin(){
   const dt=$v('fn-dt'),amt=+$v('fn-amt'),desc=$v('fn-desc').trim();
@@ -788,11 +769,11 @@ function renderCL(){
   const td=cl.filter(c=>c.dt===t);
   const up=cl.filter(c=>c.dt>t&&c.dt<=addD(t,7));
   const $td=$('cl-today');
-  $td.innerHTML=td.length?td.map(c=>`<div class="clean-task ${c.done?'done':''}"><div class="chk ${c.done?'checked':''}" onclick="togCL('${c.id}')">${c.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div>${c.note?`<div style="font-size:11px;color:var(--txt3);">${c.note}</div>`:''}</div><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'完成':'待做'}</span></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無清潔任務</div>';
+  $td.innerHTML=td.length?td.map(c=>`<div class="clean-task ${c.done?'done':''}"><div class="chk ${c.done?'checked':''}" onclick="togCL('${c.id}')">${c.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div>${c.note?`<div style="font-size:11px;color:var(--txt3);">${c.note}</div>`:''}</div><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1E8449':'#D4680A'};">${c.done?'完成':'待做'}</span></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無清潔任務</div>';
   const $up=$('cl-upcoming');
   $up.innerHTML=up.length?up.sort((a,b)=>a.dt.localeCompare(b.dt)).map(c=>`<div class="clean-task"><div style="width:38px;text-align:center;font-size:12px;color:var(--amber);font-weight:500;">${fmtD(c.dt)}<br><span style="font-size:10px;color:var(--txt3);">週${dayLbl(c.dt)}</span></div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div></div></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">近期無排班</div>';
   const all=[...cl].sort((a,b)=>b.dt.localeCompare(a.dt));
-  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
+  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1E8449':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
 }
 function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl)}}
 function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id))}
@@ -812,7 +793,7 @@ function renderGuests(){
   const data=q?guests.filter(g=>g.nm.toLowerCase().includes(q)||(g.ph&&g.ph.includes(q))||(g.em&&g.em.toLowerCase().includes(q))):guests;
   const tb=$('g-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:28px;">無顧客資料</td></tr>';return}
-  tb.innerHTML=data.map(g=>`<tr><td><strong>${g.nm}</strong></td><td>${g.ph||'—'}</td><td style="font-size:12px;">${g.em||'—'}</td><td style="font-size:12px;font-family:monospace;">${g.idn||'—'}</td><td><span class="tag" style="background:var(--orange-p);color:var(--orange-dk);">${g.src||'—'}</span></td><td style="text-align:center;">${g.stays||0}次</td><td style="font-size:12px;color:var(--txt3);">${g.note||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditGuest('${g.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delGuest('${g.id}')">刪除</button></td></tr>`).join('');
+  tb.innerHTML=data.map(g=>`<tr><td><strong>${g.nm}</strong></td><td>${g.ph||'—'}</td><td style="font-size:12px;">${g.em||'—'}</td><td style="font-size:12px;font-family:monospace;">${g.idn||'—'}</td><td><span class="tag" style="background:var(--amber-p);color:var(--amber);">${g.src||'—'}</span></td><td style="text-align:center;">${g.stays||0}次</td><td style="font-size:12px;color:var(--txt3);">${g.note||'—'}</td><td style="white-space:nowrap;"><button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditGuest('${g.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delGuest('${g.id}')">刪除</button></td></tr>`).join('');
 }
 function addGuest(){
   const nm=$v('gu-nm').trim();if(!nm)return alert('請填寫姓名');
@@ -850,7 +831,7 @@ function renderInv(cat){
     const r=i.min>0?i.stk/i.min:1;
     const [sc,sl,bc]=i.stk<=i.min?['stock-low','庫存不足','#E74C3C']:i.stk<=i.min*1.5?['stock-med','偏低','#E67E22']:['stock-ok','充足','#27AE60'];
     const w=Math.min(100,Math.round(r*100));
-    return`<tr><td><strong>${i.nm}</strong></td><td><span class="tag" style="background:var(--cream-dk);color:var(--txt2);">${i.cat}</span></td><td><span style="font-family:'Noto Sans TC',sans-serif;font-size:20px;font-weight:600;color:${bc};">${i.stk}</span><div class="prog" style="width:70px;display:inline-block;margin-left:8px;vertical-align:middle;"><div class="prog-f" style="width:${w}%;background:${bc};"></div></div></td><td>${i.unit}</td><td>${i.min} ${i.unit}</td><td><span class="tag" style="background:${i.stk<=i.min?'#FDEDEC':i.stk<=i.min*1.5?'#FDF2E4':'#E9F7EF'};color:${i.stk<=i.min?'#C0392B':i.stk<=i.min*1.5?'#D4680A':'#1A9E52'};">${sl}</span></td><td style="white-space:nowrap;"><button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="openAdj('${i.id}','${i.nm}')">調整庫存</button><button class="btn btn-d btn-sm" onclick="delInv('${i.id}')">刪除</button></td></tr>`;
+    return`<tr><td><strong>${i.nm}</strong></td><td><span class="tag" style="background:var(--cream-dk);color:var(--txt2);">${i.cat}</span></td><td><span style="font-family:'Noto Sans TC',sans-serif;font-size:20px;font-weight:600;color:${bc};">${i.stk}</span><div class="prog" style="width:70px;display:inline-block;margin-left:8px;vertical-align:middle;"><div class="prog-f" style="width:${w}%;background:${bc};"></div></div></td><td>${i.unit}</td><td>${i.min} ${i.unit}</td><td><span class="tag" style="background:${i.stk<=i.min?'#FDEDEC':i.stk<=i.min*1.5?'#FDF2E4':'#E9F7EF'};color:${i.stk<=i.min?'#922B21':i.stk<=i.min*1.5?'#D4680A':'#1E8449'};">${sl}</span></td><td style="white-space:nowrap;"><button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="openAdj('${i.id}','${i.nm}')">調整庫存</button><button class="btn btn-d btn-sm" onclick="delInv('${i.id}')">刪除</button></td></tr>`;
   }).join('');
 }
 function addInv(){
@@ -879,92 +860,36 @@ const _openM=openM;
 window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
 
 // 啟動 Firebase 監聽
-startListeners();
-// ── 備份與還原
-function exportBackupJSON(){
-  const d=new Date();const ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+function exportBkJSON(){
+  const d=new Date();
+  const ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
   const bk={version:1,exported:new Date().toLocaleString('zh-TW'),data:{}};
-  COL_KEYS.forEach(k=>{bk.data[k]=DB[k]||[];});
+  ['rooms','bookings','finance','cleaning','guests','inventory'].forEach(k=>{bk.data[k]=DB[k]||[];});
   const blob=new Blob([JSON.stringify(bk,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');
-  a.href=url;a.download='橋見民宿備份_'+ds+'.json';a.click();URL.revokeObjectURL(url);
-  showToast('✅ JSON備份已下載');
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='橋見民宿備份_'+ds+'.json';a.click();
+  URL.revokeObjectURL(url);showToast('✅ JSON備份已下載');
 }
-function exportBackup(){
-  if(typeof XLSX==='undefined'){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=doExcel;document.head.appendChild(s);}else doExcel();
-}
-function doExcel(){
-  const d=new Date();const ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-  const wb=XLSX.utils.book_new();const rooms=DB.rooms||[];const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',cancelled:'已取消'};
-  const bkRows=(DB.bookings||[]).map(b=>{const r=rooms.find(x=>x.id===b.rid);return{'訂單':b.id,'房間':r?r.name:'','客人':b.nm,'電話':b.ph||'','入住':b.ci,'退房':b.co,'人數':b.g,'金額':b.amt,'狀態':BSLBL[b.st]||b.st};});
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(bkRows.length?bkRows:[{}]),'訂房');
-  const finRows=(DB.finance||[]).map(f=>({'日期':f.dt,'類型':f.tp==='income'?'收入':'支出','說明':f.desc,'金額':f.amt}));
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(finRows.length?finRows:[{}]),'帳務');
-  XLSX.writeFile(wb,'橋見民宿備份_'+ds+'.xlsx');showToast('✅ Excel備份已下載');
-}
-function importBackup(event){
-  const file=event.target.files[0];if(!file){event.target.value='';return;}
-  if(!confirm('確認還原？這會覆蓋所有雲端資料。')){event.target.value='';return;}
+function importBkFile(){document.getElementById('bk-file').click();}
+function doImport(event){
+  const file=event.target.files[0];if(!file)return;
+  if(!confirm('確認還原？這會覆蓋所有資料。')){event.target.value='';return;}
   const reader=new FileReader();
   reader.onload=function(e){
     try{
-      const bk=JSON.parse(e.target.result);const src=bk.data||bk;let count=0;
-      const keyMap={rooms:'rooms',bookings:'bookings',finance:'finance',cleaning:'cleaning',guests:'guests',inventory:'inventory',staff:'staff',bnb_rooms:'rooms',bnb_bk:'bookings',bnb_fin:'finance',bnb_cl:'cleaning',bnb_guests:'guests',bnb_inv:'inventory'};
-      Object.keys(src).forEach(k=>{const t=keyMap[k];if(!t||!Array.isArray(src[k]))return;DB[t]=src[k];db.collection('bnb').doc(t).set({data:src[k]});count++;});
-      setTimeout(()=>{renderSec(curSec);showToast('✅ 還原成功！共'+count+'項');},500);
-    }catch(err){alert('❌ 備份檔讀取失敗：'+err.message);}
+      const bk=JSON.parse(e.target.result);const src=bk.data||bk;
+      const km={rooms:'rooms',bookings:'bookings',finance:'finance',cleaning:'cleaning',guests:'guests',inventory:'inventory',bnb_rooms:'rooms',bnb_bk:'bookings',bnb_fin:'finance',bnb_cl:'cleaning',bnb_guests:'guests',bnb_inv:'inventory'};
+      let n=0;
+      Object.keys(src).forEach(k=>{const t=km[k];if(!t||!Array.isArray(src[k]))return;
+        DB[t]=src[k];db.collection('bnb').doc(t).set({data:src[k]});n++;});
+      setTimeout(()=>{renderSec(curSec);showToast('✅ 還原成功！共'+n+'項');},800);
+    }catch(err){alert('❌ 失敗：'+err.message);}
     event.target.value='';
-  };reader.readAsText(file,'utf-8');
+  };
+  reader.readAsText(file,'utf-8');
 }
 
-// ── 診斷
-async function runDiag(){
-  const el=$('diag-content');if(!el)return;
-  el.innerHTML='<div style="text-align:center;padding:20px;">🔄 檢測中…</div>';
-  const R=[];
-  const ok=m=>'<div style="color:#1A9E52;padding:2px 0;">✅ '+m+'</div>';
-  const err=m=>'<div style="color:#C0392B;padding:2px 0;">❌ '+m+'</div>';
-  const inf=m=>'<div style="color:var(--txt2);padding:2px 0;">ℹ️ '+m+'</div>';
-  const hdr=m=>'<div style="font-weight:600;margin:10px 0 4px;border-bottom:1px solid var(--border);padding-bottom:4px;">'+m+'</div>';
-  R.push(hdr('📡 網路'));R.push(navigator.onLine?ok('網路正常'):err('網路離線'));
-  try{if(firebase.app()){R.push(ok('Firebase SDK OK'));R.push(inf('專案：'+firebase.app().options.projectId));}}catch(e){R.push(err('Firebase SDK 失敗'));}
-  R.push(hdr('🗄️ Firestore'));
-  try{const t0=Date.now();const s=await db.collection('bnb').doc('rooms').get();const ms=Date.now()-t0;
-    if(s.exists){R.push(ok('讀取成功（'+ms+'ms）'));}else R.push(ok('連線正常（無資料）'));}
-  catch(e){R.push(e.code==='permission-denied'?err('權限被拒！請更新安全規則'):err('讀取失敗：'+e.message));}
-  R.push(hdr('📊 資料狀況'));
-  COL_KEYS.forEach(k=>{const d=DB[k];if(d===null)R.push(err(k+'：未載入'));else if(d.length===0)R.push('<div style="color:#D4680A;padding:2px 0;">⚠️ '+k+'：空（0筆）</div>');else R.push(ok(k+'：'+d.length+'筆'));});
-  R.push(hdr('📱 裝置'));R.push(inf('來源：'+location.hostname));R.push(inf('時間：'+new Date().toLocaleString('zh-TW')));
-  el.innerHTML=R.join('');
-}
-
-// ── 診斷 Modal HTML（動態加入）
-function ensureDiagModal(){
-  if($('m-diag'))return;
-  const ov=document.createElement('div');
-  ov.className='modal-ov';ov.id='m-diag';ov.style.zIndex='300';
-  const modal=document.createElement('div');modal.className='modal';modal.style.maxWidth='480px';
-  const hdr=document.createElement('div');hdr.className='modal-hdr';
-  hdr.innerHTML='<div class="modal-ttl">🔍 Firebase 連線診斷</div>';
-  const xBtn=document.createElement('button');xBtn.className='modal-x';xBtn.textContent='✕';xBtn.onclick=()=>closeM('m-diag');
-  hdr.appendChild(xBtn);
-  const content=document.createElement('div');content.id='diag-content';content.style.cssText='font-size:13px;line-height:1.8;';
-  content.innerHTML='<div style="text-align:center;padding:20px;">檢測中…</div>';
-  const footer=document.createElement('div');footer.style.cssText='margin-top:16px;display:flex;gap:8px;justify-content:flex-end;';
-  const reBtn=document.createElement('button');reBtn.className='btn btn-o';reBtn.textContent='🔄 重新檢測';reBtn.onclick=runDiag;
-  const closeBtn=document.createElement('button');closeBtn.className='btn btn-ghost';closeBtn.textContent='關閉';closeBtn.onclick=()=>closeM('m-diag');
-  footer.appendChild(reBtn);footer.appendChild(closeBtn);
-  modal.appendChild(hdr);modal.appendChild(content);modal.appendChild(footer);
-  ov.appendChild(modal);document.body.appendChild(ov);
-  ov.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
-}
-
-const _origOpenM = openM;
-window.openM = function(id){
-  if(id==='m-diag'){ensureDiagModal();document.getElementById('m-diag').classList.add('open');setTimeout(runDiag,150);return;}
-  _origOpenM(id);
-};
-
+startListeners();
 </script>
 </body>
 </html>
