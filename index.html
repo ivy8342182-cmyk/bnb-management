@@ -123,7 +123,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   <div class="ld-title">橋見幸福民宿</div>
   <div class="ld-sub">正在連線雲端資料…</div>
   <div class="ld-spin"></div>
-  <button onclick="forceEnter()" style="margin-top:24px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 24px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;">略過，直接進入</button>
 </div>
 
 <button id="mob-btn" onclick="toggleSB()">☰</button>
@@ -456,7 +455,6 @@ const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null,
 const ld = k => DB[k] || [];
 // 寫入 Firestore（非同步）
 function sv(k, data) {
-  if(!appReady && !loadedKeys.has(k)){return;}
   DB[k] = data;
   setSyncing(true);
   db.collection('bnb').doc(k).set({ data: JSON.parse(JSON.stringify(data)) })
@@ -550,11 +548,11 @@ function startListeners() {
       if (snap.exists) {
         DB[k] = snap.data().data || [];
       } else {
-        // 文件不存在：只設空陣列，絕不自動覆蓋
-        if(DB[k] === null) DB[k] = [];
+        // 資料不存在：只設空陣列，不寫入任何預設資料
+        if (DB[k] === null) DB[k] = [];
       }
-      loadedCount++;
-      if (loadedCount >= COL_KEYS.length) {
+      loadedKeys.add(k);
+      if (loadedKeys.size >= COL_KEYS.length) {
         // 全部載入完成，隱藏 loading
         const ov = document.getElementById('load-ov');
         if (ov) { ov.classList.add('hide'); setTimeout(()=>ov.remove(), 600); }
@@ -868,32 +866,6 @@ const _openM=openM;
 window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
 
 // 啟動 Firebase 監聽
-function exportJSON(){
-  const d=new Date(),ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-  const bk={version:1,exported:new Date().toLocaleString('zh-TW'),data:{}};
-  const COL_KEYS2=['rooms','bookings','finance','cleaning','guests','inventory'];
-  COL_KEYS2.forEach(k=>{bk.data[k]=DB[k]||[];});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(bk,null,2)],{type:'application/json'}));
-  a.download='橋見民宿備份_'+ds+'.json';a.click();showToast('✅ 備份已下載');
-}
-function triggerImport(){document.getElementById('bk-input').click();}
-function doImport(ev){
-  const file=ev.target.files[0];if(!file)return;
-  if(!confirm('確認還原？這會覆蓋所有雲端資料。')){ev.target.value='';return;}
-  const r=new FileReader();
-  r.onload=e=>{
-    try{
-      const bk=JSON.parse(e.target.result);const src=bk.data||bk;
-      const km={rooms:'rooms',bookings:'bookings',finance:'finance',cleaning:'cleaning',guests:'guests',inventory:'inventory',bnb_rooms:'rooms',bnb_bk:'bookings',bnb_fin:'finance',bnb_cl:'cleaning',bnb_guests:'guests',bnb_inv:'inventory'};
-      let n=0;Object.keys(src).forEach(k=>{const t=km[k];if(!t||!Array.isArray(src[k]))return;DB[t]=src[k];db.collection('bnb').doc(t).set({data:src[k]});n++;});
-      setTimeout(()=>{renderSec(curSec);showToast('✅ 還原成功 '+n+'項');},800);
-    }catch(err){alert('❌ 失敗：'+err.message);}
-    ev.target.value='';
-  };
-  r.readAsText(file,'utf-8');
-}
-
-function forceEnter(){const ov=document.getElementById("load-ov");if(ov){ov.classList.add("hide");setTimeout(()=>{if(ov.parentNode)ov.remove();},600);}if(!appReady){appReady=true;initDate();setupMonths();renderDash();}}
 startListeners();
 </script>
 </body>
