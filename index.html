@@ -701,7 +701,7 @@ function renderBK(f){
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
-    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${b.id}')">取消</button>`:''}</td></tr>`;
+    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" style="margin-right:3px;" onclick="cancelBK('${b.id}')">取消</button>`:''}<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b.id}')">刪除</button></td></tr>`;
   }).join('');
 }
 function setupBKModal(){
@@ -887,6 +887,12 @@ window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
 
 // 啟動 Firebase 監聽
 // ── 訂房編輯
+function deleteBK(id){
+  if(!confirm('確認刪除此訂房？'))return;
+  sv(K.bk, ld(K.bk).filter(b=>b.id!==id));
+  renderBK(curBKF);
+  showToast('✅ 已刪除');
+}
 let editBKID = null;
 function openEditBK(id){
   const bks=ld(K.bk), b=bks.find(x=>x.id===id);
@@ -945,6 +951,40 @@ function saveEditCL(){
   closeM('m-edit-cl');
   renderCL();
   showToast('✅ 已更新');
+}
+
+function deleteRoom(id){
+  if(!confirm('確認刪除此房間？'))return;
+  sv(K.rooms, ld(K.rooms).filter(r=>r.id!==id));
+  renderRooms();
+  showToast('✅ 已刪除');
+}
+
+function exportBackupJSON(){
+  const d=new Date();
+  const ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const bk={version:1,exported:new Date().toLocaleString('zh-TW'),data:{}};
+  COL_KEYS.forEach(k=>{bk.data[k]=DB[k]||[];});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(bk,null,2)],{type:'application/json'}));
+  a.download='橋見民宿備份_'+ds+'.json';a.click();
+  showToast('✅ JSON備份已下載');
+}
+
+function importBackup(ev){
+  const file=ev.target.files[0];if(!file)return;
+  if(!confirm('確認還原？這會覆蓋所有雲端資料。')){ev.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const bk=JSON.parse(e.target.result);const src=bk.data||bk;
+      const km={rooms:'rooms',bookings:'bookings',finance:'finance',cleaning:'cleaning',guests:'guests',inventory:'inventory',bnb_rooms:'rooms',bnb_bk:'bookings',bnb_fin:'finance',bnb_cl:'cleaning',bnb_guests:'guests',bnb_inv:'inventory'};
+      let n=0;Object.keys(src).forEach(k=>{const t=km[k];if(!t||!Array.isArray(src[k]))return;DB[t]=src[k];db.collection('bnb').doc(t).set({data:src[k]});n++;});
+      setTimeout(()=>{renderSec(curSec);showToast('✅ 還原成功 '+n+'項');},800);
+    }catch(err){alert('❌ 失敗：'+err.message);}
+    ev.target.value='';
+  };
+  reader.readAsText(file,'utf-8');
 }
 
 startListeners();
