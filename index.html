@@ -698,6 +698,36 @@ function getDefaultData(k) {
 }
 
 // ══════════════════════════════════════════
+// 修復：補充 _uid + 解決重複 ID
+// ══════════════════════════════════════════
+function repairBookingUIDs() {
+  const bks = DB['bookings'] || [];
+  let changed = false;
+  const seen = {};
+  const repaired = bks.map(b => {
+    let nb = Object.assign({}, b);
+    if (!nb._uid) {
+      nb._uid = 'uid_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      changed = true;
+    }
+    if (seen[nb.id]) {
+      const oldId = nb.id;
+      nb.id = 'BK' + Date.now() + Math.random().toString(36).slice(2,4).toUpperCase();
+      console.warn('[repair] 重複ID ' + oldId + ' 改為 ' + nb.id, nb.nm);
+      changed = true;
+    }
+    seen[nb.id] = true;
+    return nb;
+  });
+  if (changed) {
+    DB['bookings'] = repaired;
+    db.collection('bnb').doc('bookings').set({ data: JSON.parse(JSON.stringify(repaired)) })
+      .then(() => { console.log('repair saved'); showToast('✅ 已自動修復重複訂房 ID'); })
+      .catch(e => console.error('repair error', e));
+  }
+}
+
+// ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
 const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
@@ -708,6 +738,7 @@ function startListeners() {
   function onAllLoaded() {
     const ov = document.getElementById('load-ov');
     if (ov) { ov.classList.add('hide'); setTimeout(()=>{ if(ov.parentNode)ov.remove(); }, 600); }
+    repairBookingUIDs();
     initDate();
     setupMonths();
     renderDash();
@@ -806,9 +837,9 @@ function renderDash(){
   const d=new Date();const dy=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   $('today-disp').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${dy[d.getDay()]}`;
   const ciL=$('d-ci-list');
-  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
+  ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
   const coL=$('d-co-list');
-  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
+  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
   const low=inv.filter(i=>i.stk<=i.min);
   const ld2=$('d-low');
   if(low.length){ld2.style.display='block';$('d-low-items').innerHTML=low.map(i=>`<div style="padding:5px 0;font-size:13px;">⚠️ <strong>${i.nm}</strong>：剩 ${i.stk} ${i.unit}（需 ${i.min} ${i.unit}）</div>`).join('')}
@@ -870,7 +901,7 @@ function renderBK(f){
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
-    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" style="margin-right:3px;" onclick="cancelBK('${b.id}')">取消</button>`:''}<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b.id}')">刪除</button></td></tr>`;
+    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b._uid||b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b._uid||b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b._uid||b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" style="margin-right:3px;" onclick="cancelBK('${b._uid||b.id}')">取消</button>`:''}<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b._uid||b.id}','${(b.nm||'').replace(/'/g,'')}')">刪除</button></td></tr>`;
   }).join('');
 }
 function setupBKModal(){
@@ -900,15 +931,15 @@ function addBK(){
   showToast('✅ 已新增 '+checked.length+' 間房訂房');
 }
 
-function checkIn(id){
-  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
+function checkIn(uid){
+  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>(x._uid||x.id)===uid);if(!b)return;
   b.st='checkedin';
   const ri=rooms.findIndex(r=>r.id===b.rid);if(ri>=0)rooms[ri].status='occupied';
   sv(K.bk,bks);sv(K.rooms,rooms);
 }
-function checkOut(id){
+function checkOut(uid){
   if(!confirm('確認辦理退房？'))return;
-  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>x.id===id);if(!b)return;
+  const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>(x._uid||x.id)===uid);if(!b)return;
   b.st='checkedout';
   const ri=rooms.findIndex(r=>r.id===b.rid);
   const rm=rooms[ri];
@@ -918,9 +949,9 @@ function checkOut(id){
   sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);
   alert('退房完成！已自動新增清潔任務。');
 }
-function cancelBK(id){
+function cancelBK(uid){
   if(!confirm('確認取消此訂房？'))return;
-  const bks=ld(K.bk),b=bks.find(x=>x.id===id);if(b){b.st='cancelled';sv(K.bk,bks)}
+  const bks=ld(K.bk),b=bks.find(x=>(x._uid||x.id)===uid);if(b){b.st='cancelled';sv(K.bk,bks)}
 }
 
 // ══════════════════════════════════════════
@@ -1066,25 +1097,21 @@ window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
 
 // 啟動 Firebase 監聽
 // ── 訂房編輯
-function deleteBK(id){
+function deleteBK(uid, nm){
   const bks = ld(K.bk);
-  const target = bks.find(b=>b.id===id);
-  if(!target){showToast('⚠️ 找不到此訂房');return;}
-  if(!confirm('確認刪除訂房 '+id+'（'+(target.nm||'')+'）？'))return;
-  const after = bks.filter(b=>b.id!==id);
-  if(after.length !== bks.length - 1){
-    // 防呆：若刪掉不只一筆，顯示警告並停止
-    return showToast('⚠️ 偵測到重複 ID，請先重新整理頁面再刪除');
-  }
+  const target = bks.find(b=>(b._uid||b.id)===uid);
+  if(!target){showToast('⚠️ 找不到此訂房，請重新整理頁面');return;}
+  if(!confirm('確認刪除訂房 '+target.id+'（'+(target.nm||nm||'')+'）？'))return;
+  const after = bks.filter(b=>(b._uid||b.id)!==uid);
   sv(K.bk, after);
   renderBK(curBKF);
-  showToast('✅ 已刪除 '+id);
+  showToast('✅ 已刪除 '+target.id+' '+(target.nm||''));
 }
-let editBKID = null;
-function openEditBK(id){
-  const bks=ld(K.bk), b=bks.find(x=>x.id===id);
+let editBKUID = null;
+function openEditBK(uid){
+  const bks=ld(K.bk), b=bks.find(x=>(x._uid||x.id)===uid);
   if(!b) return;
-  editBKID = id;
+  editBKUID = b._uid||b.id;
   $('ebk-nm').value = b.nm||'';
   $('ebk-ph').value = b.ph||'';
   $('ebk-rm').innerHTML = ld(K.rooms).map(r=>`<option value="${r.id}"${r.id===b.rid?' selected':''}>${r.name}</option>`).join('');
@@ -1099,7 +1126,7 @@ function openEditBK(id){
   openM('m-edit-bk');
 }
 function saveBK(){
-  const bks=ld(K.bk), i=bks.findIndex(x=>x.id===editBKID);
+  const bks=ld(K.bk), i=bks.findIndex(x=>(x._uid||x.id)===editBKUID);
   if(i<0) return;
   const rid=parseInt($v('ebk-rm'));
   const room=ld(K.rooms).find(r=>r.id===rid);
