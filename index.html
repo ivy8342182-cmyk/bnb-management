@@ -520,6 +520,15 @@ function setSyncError() {
   lbl.textContent = '連線失敗';
 }
 
+// 深層比對（忽略欄位順序差異）
+function sortedJSON(v) {
+  if (Array.isArray(v)) return '[' + v.map(sortedJSON).join(',') + ']';
+  if (v !== null && typeof v === 'object') {
+    return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + sortedJSON(v[k])).join(',') + '}';
+  }
+  return JSON.stringify(v);
+}
+
 // 手動檢查：從 Firestore 重新讀取並比對本機資料是否一致
 async function checkSyncNow() {
   const dot = document.getElementById('sync-dot');
@@ -531,8 +540,8 @@ async function checkSyncNow() {
     let mismatches = [];
     for (const k of Object.keys(K)) {
       const snap = await db.collection('bnb').doc(k).get();
-      const cloudData = snap.exists ? JSON.stringify(snap.data().data) : null;
-      const localData = JSON.stringify(DB[k] || []);
+      const cloudData = snap.exists ? sortedJSON(snap.data().data) : sortedJSON([]);
+      const localData = sortedJSON(DB[k] || []);
       if (cloudData !== localData) mismatches.push(k);
     }
     if (mismatches.length === 0) {
