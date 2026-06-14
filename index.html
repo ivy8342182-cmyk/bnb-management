@@ -115,9 +115,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px}
 }
 @media(max-width:480px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.gr{grid-template-columns:1fr 1fr}}
+#toast-box{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+#toast-box.show{opacity:1}
+
 </style>
 </head>
 <body>
+<div id="toast-box"></div>
 
 <div id="load-ov">
   <div class="ld-title">橋見幸福民宿</div>
@@ -142,7 +146,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item" onclick="goTo('guests')"><span class="nav-icon">👥</span>顧客資料</div>
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
-  <div style="padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);">
+  <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+    <div class="nav-item" onclick="exportBackupJSON()" style="cursor:pointer;"><span class="nav-icon">⬇</span>備份(下載JSON)</div>
+    <div class="nav-item" onclick="document.getElementById('restoreFile').click()" style="cursor:pointer;"><span class="nav-icon">⬆</span>還原JSON</div>
+    <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="importBackup(event)">
+  </div>
+  <div style="padding:14px 20px;border-top:1px solid var(--border);">
     <div style="font-size:11px;color:var(--txt3);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
   </div>
 </aside>
@@ -151,7 +160,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   <div class="pg-header">
     <h2 id="pg-title">總覽儀表板</h2>
     <div style="display:flex;align-items:center;gap:14px;">
-      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
       <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
@@ -478,12 +487,30 @@ function sv(k, data) {
 }
 
 // 同步指示燈
+let toastTimer = null;
+function showToast(msg) {
+  const box = document.getElementById('toast-box');
+  if (!box) return;
+  box.textContent = msg;
+  box.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.classList.remove('show'), 3000);
+}
+let lastSyncTime = null;
+function fmtTime(d){
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')+':'+d.getSeconds().toString().padStart(2,'0');
+}
 function setSyncing(on) {
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-label');
+  const tm = document.getElementById('sync-time');
   if (!dot) return;
   dot.className = on ? 'syncing' : '';
   lbl.textContent = on ? '同步中…' : '已同步';
+  if (!on) {
+    lastSyncTime = new Date();
+    if (tm) tm.textContent = '(' + fmtTime(lastSyncTime) + ')';
+  }
 }
 function setSyncError() {
   const dot = document.getElementById('sync-dot');
@@ -491,6 +518,41 @@ function setSyncError() {
   if (!dot) return;
   dot.className = 'err';
   lbl.textContent = '連線失敗';
+}
+
+// 手動檢查：從 Firestore 重新讀取並比對本機資料是否一致
+async function checkSyncNow() {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  const tm = document.getElementById('sync-time');
+  if (lbl) lbl.textContent = '檢查中…';
+  if (dot) dot.className = 'syncing';
+  try {
+    let mismatches = [];
+    for (const k of Object.keys(K)) {
+      const snap = await db.collection('bnb').doc(k).get();
+      const cloudData = snap.exists ? JSON.stringify(snap.data().data) : null;
+      const localData = JSON.stringify(DB[k] || []);
+      if (cloudData !== localData) mismatches.push(k);
+    }
+    if (mismatches.length === 0) {
+      lastSyncTime = new Date();
+      if (dot) dot.className = '';
+      if (lbl) lbl.textContent = '已同步';
+      if (tm) tm.textContent = '(' + fmtTime(lastSyncTime) + ')';
+      showToast('✅ 雲端資料與本機一致，同步正常');
+    } else {
+      if (dot) dot.className = 'err';
+      if (lbl) lbl.textContent = '不一致';
+      const names = {rooms:'房間',bookings:'訂房',finance:'帳務',cleaning:'清潔',guests:'顧客',inventory:'庫存'};
+      showToast('⚠️ 以下資料與雲端不一致：' + mismatches.map(k=>names[k]||k).join('、'));
+    }
+  } catch (e) {
+    console.error(e);
+    if (dot) dot.className = 'err';
+    if (lbl) lbl.textContent = '連線失敗';
+    showToast('❌ 無法連線至 Firestore：' + e.message);
+  }
 }
 
 // ══════════════════════════════════════════
