@@ -857,7 +857,15 @@ let curBKF='all';
 function filterBK(f,btn){curBKF=f;document.querySelectorAll('.bk-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBK(f)}
 function renderBK(f){
   const bks=ld(K.bk),rooms=ld(K.rooms);
-  let data=(f==='all'?bks:bks.filter(b=>b.st===f)).sort((a,b)=>b.id.localeCompare(a.id));
+  let data=(f==='all'?bks:bks.filter(b=>b.st===f)).sort((a,b)=>{
+    // 嘗試用 ID 內的時間戳或數字排序（新的在前）
+    const getNum = id => {
+      if(!id) return 0;
+      const m = id.replace('BK','').match(/^(\d+)/);
+      return m ? parseInt(m[1]) : 0;
+    };
+    return getNum(b.id) - getNum(a.id);
+  });
   const tb=$('bk-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
@@ -885,7 +893,8 @@ function addBK(){
   checked.forEach(room=>{
     const nums=bks.map(b=>parseInt(b.id.replace('BK',''))||0);
     const nextNum=nums.length?Math.max(...nums)+1:1;
-    bks.push({id:'BK'+String(nextNum).padStart(3,'0'),_uid:'uid_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),rid:room.id,rnm:room.name,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
+    const newBKID = 'BK' + Date.now() + Math.random().toString(36).slice(2,4).toUpperCase();
+    bks.push({id:newBKID,rid:room.id,rnm:room.name,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
   });
   sv(K.bk,bks);closeM('m-add-bk');renderBK(curBKF);
   showToast('✅ 已新增 '+checked.length+' 間房訂房');
@@ -1058,10 +1067,18 @@ window.openM=function(id){if(id==='m-add-bk')setupBKModal();_openM(id)};
 // 啟動 Firebase 監聽
 // ── 訂房編輯
 function deleteBK(id){
-  if(!confirm('確認刪除此訂房？'))return;
-  sv(K.bk, ld(K.bk).filter(b=>b.id!==id));
+  const bks = ld(K.bk);
+  const target = bks.find(b=>b.id===id);
+  if(!target){showToast('⚠️ 找不到此訂房');return;}
+  if(!confirm('確認刪除訂房 '+id+'（'+(target.nm||'')+'）？'))return;
+  const after = bks.filter(b=>b.id!==id);
+  if(after.length !== bks.length - 1){
+    // 防呆：若刪掉不只一筆，顯示警告並停止
+    return showToast('⚠️ 偵測到重複 ID，請先重新整理頁面再刪除');
+  }
+  sv(K.bk, after);
   renderBK(curBKF);
-  showToast('✅ 已刪除');
+  showToast('✅ 已刪除 '+id);
 }
 let editBKID = null;
 function openEditBK(id){
