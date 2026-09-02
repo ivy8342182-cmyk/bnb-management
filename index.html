@@ -37,8 +37,8 @@ body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;ba
 /* sidebar 收合狀態 */
 body.sb-collapsed #sidebar{transform:translateX(-220px);}
 body.sb-collapsed #main{margin-left:0 !important;}
-body.sb-collapsed #main .pg-header{padding-left:16px !important;}
-body.sb-collapsed #sb-toggle-btn{background:var(--orange) !important;color:#fff !important;border-color:var(--orange) !important;}
+
+body.sb-collapsed #sb-toggle-btn{opacity:0.85;}
 .sb-logo{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
 .sb-logo h1{font-size:15px;font-weight:700;color:var(--txt);line-height:1.4;display:flex;align-items:center;gap:8px}
 .sb-logo p{font-size:11px;color:var(--txt3);margin-top:2px}
@@ -49,7 +49,7 @@ body.sb-collapsed #sb-toggle-btn{background:var(--orange) !important;color:#fff 
 .nav-item.active{background:var(--orange-p);color:var(--orange-dk);font-weight:600}
 .nav-icon{width:20px;text-align:center;font-size:15px}
 #main{margin-left:220px;flex:1;min-height:100vh}
-.pg-header{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.pg-header{background:rgba(255,255,255,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;min-height:52px;}
 .pg-header h2{font-family:'Noto Sans TC',sans-serif;font-size:19px;font-weight:600}
 .pg-content{padding:22px 28px}
 .section{display:none}.section.active{display:block}
@@ -116,7 +116,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 @media(max-width:768px){
   #sidebar{transform:translateX(-100%)}#sidebar.open{transform:translateX(0)}
-  #main{margin-left:0}.pg-header{padding-left:14px}.pg-content{padding:14px}
+  #main{margin-left:0}.pg-content{padding:14px}
   .g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
   .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px}
 }
@@ -127,7 +127,7 @@ body.mobile-mode #sidebar{transform:translateX(-100%);}
 body.mobile-mode #sidebar.open{transform:translateX(0);}
 body.mobile-mode #main{margin-left:0;}
 
-body.mobile-mode .pg-header{padding-left:62px}
+
 body.mobile-mode .pg-content{padding:14px}
 body.mobile-mode .g4{grid-template-columns:1fr 1fr}
 body.mobile-mode .g3{grid-template-columns:1fr 1fr}
@@ -142,7 +142,7 @@ body.desktop-mode.sb-collapsed #sidebar{transform:translateX(-220px) !important;
 body.desktop-mode:not(.sb-collapsed) #main{margin-left:220px !important;}
 body.desktop-mode.sb-collapsed #main{margin-left:0 !important;}
 
-body.desktop-mode .pg-header{padding-left:28px !important;}
+
 body.desktop-mode .pg-content{padding:24px 28px !important;}
 body.desktop-mode .g4{grid-template-columns:repeat(4,1fr) !important;}
 body.desktop-mode .g3{grid-template-columns:repeat(3,1fr) !important;}
@@ -259,10 +259,10 @@ body.sb-open #sb-overlay{display:block;}
 </aside>
 
 <main id="main">
-  <div class="pg-header">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button id="sb-toggle-btn" onclick="toggleSidebar()" title="展開/收合選單" style="width:34px;height:34px;border:1px solid var(--border);background:var(--bg);border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;">☰</button>
-      <h2 id="pg-title">總覽儀表板</h2>
+  <div class="pg-header" style="padding-left:0;">
+    <div style="display:flex;align-items:center;gap:0;">
+      <button id="sb-toggle-btn" onclick="toggleSidebar()" title="展開/收合選單" style="width:52px;height:52px;border:none;background:var(--orange);color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;border-right:1px solid rgba(255,255,255,.2);">☰</button>
+      <h2 id="pg-title" style="padding-left:18px;">總覽儀表板</h2>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="hdr-sync-wrap" style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item hdr-sync-btn" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
