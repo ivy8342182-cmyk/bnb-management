@@ -128,22 +128,54 @@ body.mobile-mode .g3{grid-template-columns:1fr 1fr}
 body.mobile-mode .g2{grid-template-columns:1fr}
 body.mobile-mode .gr{grid-template-columns:1fr 1fr}
 body.mobile-mode .today-banner{flex-direction:column;gap:10px}
-body.mobile-mode #view-toggle-btn{background:var(--orange);color:#fff;border-color:var(--orange);}
-body.desktop-mode #view-toggle-btn{background:#f0f0f0;color:#333;}
-#view-toggle-btn{border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap;}
+/* view-toggle-btn 已整合進 sidebar nav-item */
+
+/* 電腦版強制覆蓋媒體查詢（手機切電腦用）*/
+body.desktop-mode #sidebar{transform:translateX(0) !important;}
+body.desktop-mode #main{margin-left:220px !important;}
+body.desktop-mode #mob-btn{display:none !important;}
+body.desktop-mode .pg-header{padding-left:28px !important;}
+body.desktop-mode .pg-content{padding:24px 28px !important;}
+body.desktop-mode .g4{grid-template-columns:repeat(4,1fr) !important;}
+body.desktop-mode .g3{grid-template-columns:repeat(3,1fr) !important;}
+body.desktop-mode .g2{grid-template-columns:repeat(2,1fr) !important;}
+body.desktop-mode .gr{grid-template-columns:repeat(2,1fr) !important;}
+body.desktop-mode .today-banner{flex-direction:row !important;gap:0 !important;}
+body.desktop-mode .hdr-sync-wrap{display:flex !important;}
+body.desktop-mode .hdr-date-wrap{display:block !important;}
+body.desktop-mode #bk-list-wrap .card{display:block !important;}
+body.desktop-mode .bk-card-list{display:none !important;}
+body.desktop-mode #cal-grid{display:block !important;}
+body.desktop-mode #cal-mobile{display:none !important;}
+body.desktop-mode .cal-nav-desktop{display:flex !important;}
+body.desktop-mode .cal-nav-mobile{display:none !important;}
 #toast-box{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 #toast-box.show{opacity:1}
 .bk-card-list{display:none;flex-direction:column;gap:10px;}
 /* 手機月曆 */
-#cal-mobile{display:none;flex-direction:column;gap:6px;}
-.cal-day-row{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
-.cal-day-hdr{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);}
-.cal-day-num{font-size:18px;font-weight:700;min-width:28px;text-align:center;}
-.cal-day-wk{font-size:12px;color:var(--txt3);}
-.cal-day-bks{padding:6px 10px;display:flex;flex-direction:column;gap:4px;}
-.cal-day-bk{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:13px;}
-.cal-day-bk-room{font-weight:600;min-width:36px;font-size:12px;}
-.cal-day-empty{padding:8px 12px;font-size:12px;color:var(--txt3);}
+#cal-mobile{display:none;flex-direction:column;gap:0;}
+/* 月視圖 grid */
+.mob-cal-month{width:100%;border-collapse:collapse;}
+.mob-cal-month th{padding:6px 0;font-size:11px;color:var(--txt3);text-align:center;border-bottom:1px solid var(--border);}
+.mob-cal-month td{padding:2px;vertical-align:top;border:1px solid var(--border);width:calc(100%/7);height:52px;cursor:pointer;}
+.mob-cal-month td:hover{background:var(--bg);}
+.mob-cal-day-num{font-size:13px;font-weight:600;padding:3px 4px;display:block;line-height:1;}
+.mob-cal-dots{display:flex;flex-wrap:wrap;gap:2px;padding:2px 3px;}
+.mob-cal-dot{width:7px;height:7px;border-radius:50%;}
+.mob-cal-today .mob-cal-day-num{background:var(--orange);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;margin:2px auto 0;}
+/* 週視圖 cards */
+.mob-cal-week{display:flex;flex-direction:column;gap:8px;padding:4px 0;}
+.cal-day-row{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.cal-day-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);}
+.cal-day-num{font-size:20px;font-weight:700;min-width:30px;text-align:center;}
+.cal-day-bks{padding:8px 12px;display:flex;flex-direction:column;gap:5px;}
+.cal-day-bk{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:13px;}
+.cal-day-bk-room{font-weight:700;min-width:32px;font-size:12px;}
+.cal-day-empty{padding:10px 14px;font-size:13px;color:var(--txt3);}
+/* 切換標籤 */
+.mob-cal-tabs{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:3px;margin-bottom:10px;}
+.mob-cal-tab{flex:1;padding:6px;text-align:center;font-size:12px;border-radius:8px;cursor:pointer;border:none;background:transparent;color:var(--txt3);}
+.mob-cal-tab.active{background:var(--white);color:var(--orange);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.08);}
 body.mobile-mode #cal-grid{display:none;}
 body.mobile-mode #cal-mobile{display:flex;}
 body.mobile-mode .cal-nav-desktop{display:none;}
@@ -163,6 +195,8 @@ body.mobile-mode .cal-nav-mobile{display:flex !important;}
 .bk-card-actions{display:flex;gap:6px;flex-wrap:wrap;}
 body.mobile-mode #bk-list-wrap .card{display:none;}
 body.mobile-mode .bk-card-list{display:flex;}
+body.mobile-mode .hdr-sync-wrap{display:none !important;}
+body.mobile-mode .hdr-date-wrap{display:none !important;}
 @media(max-width:768px){
   #bk-list-wrap .card{display:none;}
   .bk-card-list{display:flex;}
@@ -198,6 +232,7 @@ body.mobile-mode .bk-card-list{display:flex;}
     <div class="nav-item" onclick="goTo('inventory')"><span class="nav-icon">📦</span>備品庫存<span class="ndot" id="inv-dot" style="display:none"></span></div>
   </nav>
   <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+    <div class="nav-item" id="view-toggle-btn" onclick="toggleViewMode()" style="cursor:pointer;"><span class="nav-icon">📱</span><span id="view-toggle-label">手機版顯示</span></div>
     <div class="nav-item" onclick="exportBackupJSON()" style="cursor:pointer;"><span class="nav-icon">⬇</span>備份(下載JSON)</div>
     <div class="nav-item" onclick="document.getElementById('restoreFile').click()" style="cursor:pointer;"><span class="nav-icon">⬆</span>還原JSON</div>
     <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="importBackup(event)">
@@ -210,10 +245,9 @@ body.mobile-mode .bk-card-list{display:flex;}
 <main id="main">
   <div class="pg-header">
     <h2 id="pg-title">總覽儀表板</h2>
-    <div style="display:flex;align-items:center;gap:14px;">
-      <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
-      <button id="view-toggle-btn" onclick="toggleViewMode()">📱 手機版顯示</button>
-      <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="hdr-sync-wrap" style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item hdr-sync-btn" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
+      <div class="hdr-date-wrap" style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
   <div class="pg-content">
@@ -287,11 +321,11 @@ body.mobile-mode .bk-card-list{display:flex;}
           <span id="cal-title" style="font-weight:600;font-size:15px;"></span>
           <button class="btn btn-o btn-sm" onclick="calNav(1)">下個月 ›</button>
         </div>
-        <!-- 手機版導覽（週切換）-->
+        <!-- 手機版導覽 -->
         <div class="cal-nav-mobile" style="display:none;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <button class="btn btn-o btn-sm" onclick="calWeekNav(-1)">‹ 上一週</button>
-          <span id="cal-title-mobile" style="font-weight:600;font-size:14px;"></span>
-          <button class="btn btn-o btn-sm" onclick="calWeekNav(1)">下一週 ›</button>
+          <button class="btn btn-o btn-sm" onclick="mobCalNav(-1)">‹</button>
+          <span id="cal-title-mobile" style="font-weight:600;font-size:15px;"></span>
+          <button class="btn btn-o btn-sm" onclick="mobCalNav(1)">›</button>
         </div>
         <!-- 電腦版大表格 -->
         <div class="card cal-nav-desktop" style="padding:0;overflow:hidden;">
@@ -299,8 +333,15 @@ body.mobile-mode .bk-card-list{display:flex;}
             <div id="cal-grid"></div>
           </div>
         </div>
-        <!-- 手機版直式週視圖 -->
-        <div id="cal-mobile"></div>
+        <!-- 手機版：月/週視圖 -->
+        <div id="cal-mobile">
+          <div class="mob-cal-tabs">
+            <button class="mob-cal-tab active" id="mob-tab-month" onclick="switchMobCalTab('month')">📅 月視圖</button>
+            <button class="mob-cal-tab" id="mob-tab-week" onclick="switchMobCalTab('week')">📋 週視圖</button>
+          </div>
+          <div id="mob-cal-month-wrap"></div>
+          <div id="mob-cal-week-wrap" style="display:none;"></div>
+        </div>
       </div>
 
       <div id="bk-list-wrap"><div class="card" style="padding:0;overflow:hidden;">
@@ -580,20 +621,30 @@ const ld = k => DB[k] || [];
 // ── 視圖模式切換（手機 / 電腦）──
 function toggleViewMode() {
   const isMobile = document.body.classList.contains('mobile-mode');
-  const tbtn = document.getElementById('view-toggle-btn');
+  function updateToggleBtn(mode){
+    const icon = document.querySelector('#view-toggle-btn .nav-icon');
+    const label = document.getElementById('view-toggle-label');
+    if(mode==='mobile'){
+      if(icon) icon.textContent='🖥';
+      if(label) label.textContent='電腦版顯示';
+    } else {
+      if(icon) icon.textContent='📱';
+      if(label) label.textContent='手機版顯示';
+    }
+  }
   if (isMobile) {
     document.body.classList.remove('mobile-mode');
     document.body.classList.add('desktop-mode');
     document.getElementById('sidebar').classList.remove('open');
     localStorage.setItem('viewMode','desktop');
-    if(tbtn) tbtn.textContent = '📱 手機版顯示';
+    updateToggleBtn('desktop');
     showToast('🖥 已切換為電腦版顯示');
   } else {
     document.body.classList.remove('desktop-mode');
     document.body.classList.add('mobile-mode');
     document.getElementById('sidebar').classList.remove('open');
     localStorage.setItem('viewMode','mobile');
-    if(tbtn) tbtn.textContent = '🖥 電腦版顯示';
+    updateToggleBtn('mobile');
     showToast('📱 已切換為手機版顯示');
   }
 }
@@ -601,10 +652,16 @@ function initViewMode() {
   const saved = localStorage.getItem('viewMode');
   const mode = saved || (window.innerWidth <= 768 ? 'mobile' : 'desktop');
   document.body.classList.add(mode + '-mode');
-  // 等 DOM 完整後設定按鈕文字
   window.addEventListener('DOMContentLoaded', ()=>{
-    const tbtn = document.getElementById('view-toggle-btn');
-    if(tbtn) tbtn.textContent = mode === 'mobile' ? '🖥 電腦版顯示' : '📱 手機版顯示';
+    const icon = document.querySelector('#view-toggle-btn .nav-icon');
+    const label = document.getElementById('view-toggle-label');
+    if(mode==='mobile'){
+      if(icon) icon.textContent='🖥';
+      if(label) label.textContent='電腦版顯示';
+    } else {
+      if(icon) icon.textContent='📱';
+      if(label) label.textContent='手機版顯示';
+    }
   }, {once:true});
 }
 initViewMode();
@@ -1504,64 +1561,160 @@ function calNav(dir){
   calMonth+=dir;
   if(calMonth>11){calMonth=0;calYear++;}
   if(calMonth<0){calMonth=11;calYear--;}
+  mobCalYear=calYear;mobCalMonth=calMonth;
   renderCal();
 }
 
-// 手機週視圖起始日 (預設本週一)
-let calWeekStart = (()=>{const d=new Date();d.setDate(d.getDate()-(d.getDay()||7)+1);d.setHours(0,0,0,0);return d;})();
-function calWeekNav(dir){
-  calWeekStart=new Date(calWeekStart);
-  calWeekStart.setDate(calWeekStart.getDate()+dir*7);
+// ── 手機月曆 ──
+function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+let mobCalTab = 'month'; // 'month' | 'week'
+let mobCalYear = new Date().getFullYear();
+let mobCalMonth = new Date().getMonth();
+let mobCalWeekStart = (()=>{const d=new Date();d.setDate(d.getDate()-(d.getDay()||7)+1);d.setHours(0,0,0,0);return d;})();
+
+function switchMobCalTab(tab){
+  mobCalTab=tab;
+  document.getElementById('mob-tab-month').classList.toggle('active',tab==='month');
+  document.getElementById('mob-tab-week').classList.toggle('active',tab==='week');
+  document.getElementById('mob-cal-month-wrap').style.display=tab==='month'?'':'none';
+  document.getElementById('mob-cal-week-wrap').style.display=tab==='week'?'':'none';
   renderCalMobile();
 }
-function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function renderCalMobile(){
+
+function mobCalNav(dir){
+  if(mobCalTab==='month'){
+    mobCalMonth+=dir;
+    if(mobCalMonth>11){mobCalMonth=0;mobCalYear++;}
+    if(mobCalMonth<0){mobCalMonth=11;mobCalYear--;}
+    renderMobMonth();
+  } else {
+    mobCalWeekStart=new Date(mobCalWeekStart);
+    mobCalWeekStart.setDate(mobCalWeekStart.getDate()+dir*7);
+    renderMobWeek();
+  }
+  updateMobCalTitle();
+}
+
+function updateMobCalTitle(){
+  const el=document.getElementById('cal-title-mobile');
+  if(!el)return;
+  if(mobCalTab==='month'){
+    el.textContent=mobCalYear+'年 '+(mobCalMonth+1)+'月';
+  } else {
+    const end=new Date(mobCalWeekStart);end.setDate(end.getDate()+6);
+    const fmt=d=>(d.getMonth()+1)+'/'+(d.getDate());
+    el.textContent=fmt(mobCalWeekStart)+' — '+fmt(end);
+  }
+}
+
+function renderMobMonth(){
+  const bks=ld(K.bk).filter(b=>b.st!=='cancelled');
+  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
+  const t=today();
+  const firstDay=new Date(mobCalYear,mobCalMonth,1).getDay();
+  const daysInMonth=new Date(mobCalYear,mobCalMonth+1,0).getDate();
+  const wkLabels=['日','一','二','三','四','五','六'];
+  let html='<table class="mob-cal-month"><thead><tr>';
+  wkLabels.forEach((w,i)=>{
+    const color=i===0||i===6?'#E74C3C':'var(--txt3)';
+    html+=`<th style="color:${color};">${w}</th>`;
+  });
+  html+='</tr></thead><tbody><tr>';
+  for(let i=0;i<firstDay;i++) html+='<td style="background:var(--bg);"></td>';
+  let col=firstDay;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=mobCalYear+'-'+String(mobCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayBks=bks.filter(b=>b.ci<=ds&&b.co>ds);
+    const isToday=ds===t;
+    const dow=new Date(mobCalYear,mobCalMonth,d).getDay();
+    const isWk=dow===0||dow===6;
+    const numColor=isWk?'#E74C3C':'var(--txt)';
+    const dotHtml=dayBks.slice(0,4).map(b=>{
+      const c=STATUS_COLOR[b.st]||'#999';
+      return`<div class="mob-cal-dot" style="background:${c};"></div>`;
+    }).join('');
+    html+=`<td onclick="mobCalClickDay('${ds}')" style="${isToday?'background:#FFF3EC;':''}">
+      <div class="${isToday?'mob-cal-today':''}" style="text-align:center;">
+        <span class="mob-cal-day-num" style="color:${isToday?'':numColor};">${d}</span>
+      </div>
+      <div class="mob-cal-dots">${dotHtml}</div>
+    </td>`;
+    col++;
+    if(col%7===0&&d<daysInMonth) html+='</tr><tr>';
+  }
+  const remaining=(7-col%7)%7;
+  for(let i=0;i<remaining;i++) html+='<td style="background:var(--bg);"></td>';
+  html+='</tr></tbody></table>';
+  // 圖例
+  html+=`<div style="display:flex;gap:12px;padding:10px 4px;font-size:11px;color:var(--txt3);">
+    <span style="display:flex;align-items:center;gap:4px;"><span class="mob-cal-dot" style="background:#3498DB;display:inline-block;"></span>已確認</span>
+    <span style="display:flex;align-items:center;gap:4px;"><span class="mob-cal-dot" style="background:#F26522;display:inline-block;"></span>入住中</span>
+    <span style="display:flex;align-items:center;gap:4px;"><span class="mob-cal-dot" style="background:#95A5A6;display:inline-block;"></span>已退房</span>
+    <span style="color:var(--txt3);">點日期看詳情</span>
+  </div>`;
+  const el=document.getElementById('mob-cal-month-wrap');
+  if(el)el.innerHTML=html;
+}
+
+function mobCalClickDay(ds){
+  // 切到週視圖並跳到該週
+  const d=new Date(ds);
+  const dayOfWeek=d.getDay();
+  const monday=new Date(d);
+  monday.setDate(d.getDate()-(dayOfWeek===0?6:dayOfWeek-1));
+  monday.setHours(0,0,0,0);
+  mobCalWeekStart=monday;
+  switchMobCalTab('week');
+}
+
+function renderMobWeek(){
   const rooms=ld(K.rooms),bks=ld(K.bk).filter(b=>b.st!=='cancelled');
   const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
   const STATUS_BG={confirmed:'#EAF4FB',checkedin:'#FEF0E7',checkedout:'#F4F4F4'};
   const t=today();
-  const weekEnd=new Date(calWeekStart);weekEnd.setDate(weekEnd.getDate()+6);
-  const titleEl=document.getElementById('cal-title-mobile');
-  if(titleEl){
-    const fmt=d=>(d.getMonth()+1)+'/'+d.getDate();
-    titleEl.textContent=fmt(calWeekStart)+' — '+fmt(weekEnd);
-  }
   const wkLabels=['日','一','二','三','四','五','六'];
-  let html='';
+  let html='<div class="mob-cal-week">';
   for(let i=0;i<7;i++){
-    const d=new Date(calWeekStart);d.setDate(d.getDate()+i);
+    const d=new Date(mobCalWeekStart);d.setDate(d.getDate()+i);
     const ds=dateStr(d);
     const isToday=ds===t,isWk=d.getDay()===0||d.getDay()===6;
     const dayColor=isToday?'var(--orange)':isWk?'#E74C3C':'var(--txt)';
     const dayBks=bks.filter(b=>b.ci<=ds&&b.co>ds);
     html+=`<div class="cal-day-row">
-      <div class="cal-day-hdr" style="${isToday?'background:var(--orange-p);':isWk?'background:#FEF0E7;':''}">
+      <div class="cal-day-hdr" style="${isToday?'background:#FFF3EC;':isWk?'background:#FEF5F5;':''}">
         <div class="cal-day-num" style="color:${dayColor};">${d.getDate()}</div>
-        <div>
-          <div style="font-size:11px;color:${dayColor};font-weight:${isToday?'700':'400'};">${wkLabels[d.getDay()]}${isToday?' · 今天':''}</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;color:${dayColor};font-weight:${isToday?'700':'500'};">${wkLabels[d.getDay()]}${isToday?'・今天':''}</div>
           <div style="font-size:11px;color:var(--txt3);">${d.getMonth()+1}月</div>
         </div>
-        ${dayBks.length?`<div style="margin-left:auto;font-size:11px;background:var(--orange);color:#fff;padding:2px 7px;border-radius:10px;">${dayBks.length}筆</div>`:''}
+        ${dayBks.length?`<div style="font-size:11px;background:var(--orange);color:#fff;padding:2px 8px;border-radius:10px;font-weight:600;">${dayBks.length}筆</div>`:''}
       </div>
       ${dayBks.length?`<div class="cal-day-bks">${dayBks.map(b=>{
         const r=rooms.find(x=>x.id===b.rid);
-        const sc=STATUS_COLOR[b.st]||'#999';const sbg=STATUS_BG[b.st]||'#f5f5f5';
+        const sc=STATUS_COLOR[b.st]||'#999',sbg=STATUS_BG[b.st]||'#f5f5f5';
         const isCI=b.ci===ds,isCO=addD(b.co,-1)===ds;
         return`<div class="cal-day-bk" style="background:${sbg};border-left:3px solid ${sc};">
           <div class="cal-day-bk-room" style="color:${sc};">${r?r.name:'—'}</div>
           <div style="flex:1;">
-            <div style="font-weight:600;">${b.nm||'—'}</div>
-            <div style="font-size:11px;color:var(--txt3);">${isCI?'📥 入住日':''}${isCO?'📤 退房日':''}</div>
-          </div>
-          <div style="font-size:11px;color:var(--txt3);text-align:right;">
-            ${b.ci.slice(5)}→${b.co.slice(5)}
+            <div style="font-weight:600;font-size:13px;">${b.nm||'—'}</div>
+            <div style="font-size:11px;color:var(--txt3);">${isCI?'📥入住':''}${isCO?'📤退房':''} ${b.ci.slice(5)}→${b.co.slice(5)}</div>
           </div>
         </div>`;
       }).join('')}</div>`:`<div class="cal-day-empty">空房</div>`}
     </div>`;
   }
-  const el=document.getElementById('cal-mobile');
+  html+='</div>';
+  const el=document.getElementById('mob-cal-week-wrap');
   if(el)el.innerHTML=html;
+}
+
+function renderCalMobile(){
+  // 同步月份到手機月曆
+  mobCalYear=calYear;
+  mobCalMonth=calMonth;
+  updateMobCalTitle();
+  if(mobCalTab==='month') renderMobMonth();
+  else renderMobWeek();
 }
 
 function renderCal(){
