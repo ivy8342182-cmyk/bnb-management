@@ -32,7 +32,13 @@
 .num-font{font-family:'Noto Sans TC',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
-#sidebar{width:220px;min-height:100vh;background:var(--white);color:var(--txt);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s;border-right:1px solid var(--border);box-shadow:2px 0 16px rgba(0,0,0,.04)}
+#sidebar{width:220px;min-height:100vh;background:var(--white);color:var(--txt);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s,width .3s;border-right:1px solid var(--border);box-shadow:2px 0 16px rgba(0,0,0,.04)}
+/* 電腦版 sidebar 收合 */
+/* sidebar 收合狀態 */
+body.sb-collapsed #sidebar{transform:translateX(-220px);}
+body.sb-collapsed #main{margin-left:0 !important;}
+body.sb-collapsed #main .pg-header{padding-left:16px !important;}
+body.sb-collapsed #sb-toggle-btn{background:var(--orange) !important;color:#fff !important;border-color:var(--orange) !important;}
 .sb-logo{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
 .sb-logo h1{font-size:15px;font-weight:700;color:var(--txt);line-height:1.4;display:flex;align-items:center;gap:8px}
 .sb-logo p{font-size:11px;color:var(--txt3);margin-top:2px}
@@ -91,7 +97,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 .modal-ttl{font-family:'Noto Sans TC',sans-serif;font-size:18px;font-weight:600}
 .modal-x{width:30px;height:30px;border-radius:50%;background:var(--bg);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--txt2)}
 .modal-x:hover{background:var(--border2)}
-#mob-btn{display:none;position:fixed;top:14px;left:14px;z-index:300;width:40px;height:40px;background:var(--orange);border:none;border-radius:10px;cursor:pointer;color:#fff;font-size:18px;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(242,101,34,.35)}
+#mob-btn{display:none;}/* mob-btn 已整合進 sb-toggle-btn */
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
 .prog{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:5px}
 .prog-f{height:100%;border-radius:3px;transition:width .3s}
@@ -110,17 +116,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 @media(max-width:768px){
   #sidebar{transform:translateX(-100%)}#sidebar.open{transform:translateX(0)}
-  #main{margin-left:0}#mob-btn{display:flex}.pg-header{padding-left:62px}.pg-content{padding:14px}
+  #main{margin-left:0}.pg-header{padding-left:14px}.pg-content{padding:14px}
   .g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}
   .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px}
 }
 @media(max-width:480px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.gr{grid-template-columns:1fr 1fr}}
 
 /* 手機模擬模式（由 JS 套用） */
-body.mobile-mode #sidebar{transform:translateX(-100%)}
-body.mobile-mode #sidebar.open{transform:translateX(0)}
-body.mobile-mode #main{margin-left:0}
-body.mobile-mode #mob-btn{display:flex}
+body.mobile-mode #sidebar{transform:translateX(-100%);}
+body.mobile-mode #sidebar.open{transform:translateX(0);}
+body.mobile-mode #main{margin-left:0;}
+
 body.mobile-mode .pg-header{padding-left:62px}
 body.mobile-mode .pg-content{padding:14px}
 body.mobile-mode .g4{grid-template-columns:1fr 1fr}
@@ -131,9 +137,11 @@ body.mobile-mode .today-banner{flex-direction:column;gap:10px}
 /* view-toggle-btn 已整合進 sidebar nav-item */
 
 /* 電腦版強制覆蓋媒體查詢（手機切電腦用）*/
-body.desktop-mode #sidebar{transform:translateX(0) !important;}
-body.desktop-mode #main{margin-left:220px !important;}
-body.desktop-mode #mob-btn{display:none !important;}
+body.desktop-mode:not(.sb-collapsed) #sidebar{transform:translateX(0) !important;}
+body.desktop-mode.sb-collapsed #sidebar{transform:translateX(-220px) !important;}
+body.desktop-mode:not(.sb-collapsed) #main{margin-left:220px !important;}
+body.desktop-mode.sb-collapsed #main{margin-left:0 !important;}
+
 body.desktop-mode .pg-header{padding-left:28px !important;}
 body.desktop-mode .pg-content{padding:24px 28px !important;}
 body.desktop-mode .g4{grid-template-columns:repeat(4,1fr) !important;}
@@ -199,9 +207,9 @@ body.mobile-mode #hist-table-wrap{display:none;}
 body.mobile-mode .bk-card-list{display:flex;}
 body.mobile-mode .hdr-sync-wrap{display:none !important;}
 body.mobile-mode .hdr-date-wrap{display:none !important;}
-body.desktop-mode #sb-close-btn{display:flex !important;}
+
 #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;}
-body.desktop-mode.sb-open #sb-overlay{display:block;}
+body.sb-open #sb-overlay{display:block;}
 @media(max-width:768px){
   #bk-list-wrap .card{display:none;}
   #hist-table-wrap{display:none;}
@@ -220,13 +228,13 @@ body.desktop-mode.sb-open #sb-overlay{display:block;}
   <div class="ld-spin"></div>
 </div>
 
-<button id="mob-btn" onclick="toggleSB()">☰</button>
+
 
 <aside id="sidebar">
   <div class="sb-logo" style="position:relative;">
     <h1><span style="width:28px;height:28px;background:var(--orange);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🌿</span>橋見幸福民宿</h1>
     <p style="margin-top:6px;padding-left:36px;">內部營運管理系統</p>
-    <button id="sb-close-btn" onclick="closeSidebar()" style="display:none;position:absolute;top:14px;right:12px;width:28px;height:28px;border:1px solid var(--border);background:var(--bg);border-radius:8px;cursor:pointer;font-size:13px;align-items:center;justify-content:center;color:var(--txt3);">✕</button>
+
   </div>
   <div class="sb-date" id="sb-date"></div>
   <nav class="sb-nav">
@@ -252,7 +260,10 @@ body.desktop-mode.sb-open #sb-overlay{display:block;}
 
 <main id="main">
   <div class="pg-header">
-    <h2 id="pg-title">總覽儀表板</h2>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="sb-toggle-btn" onclick="toggleSidebar()" title="展開/收合選單" style="width:34px;height:34px;border:1px solid var(--border);background:var(--bg);border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;">☰</button>
+      <h2 id="pg-title">總覽儀表板</h2>
+    </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="hdr-sync-wrap" style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item hdr-sync-btn" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
       <div class="hdr-date-wrap" style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
@@ -662,6 +673,9 @@ function initViewMode() {
   const saved = localStorage.getItem('viewMode');
   const mode = saved || (window.innerWidth <= 768 ? 'mobile' : 'desktop');
   document.body.classList.add(mode + '-mode');
+  if(localStorage.getItem('sbCollapsed')==='1'){
+    document.body.classList.add('sb-collapsed');
+  }
   window.addEventListener('DOMContentLoaded', ()=>{
     const icon = document.querySelector('#view-toggle-btn .nav-icon');
     const label = document.getElementById('view-toggle-label');
@@ -1025,10 +1039,22 @@ function goTo(s){
   renderSec(s);
 }
 function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),history:renderHistory,finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
-function toggleSB(){
-  const isOpen=$('sidebar').classList.toggle('open');
-  document.body.classList.toggle('sb-open',isOpen);
+function toggleSidebar(){
+  const isMobile = document.body.classList.contains('mobile-mode') ||
+    (!document.body.classList.contains('desktop-mode') && window.innerWidth<=768);
+  if(isMobile){
+    // 手機：浮動開關
+    const isOpen=$('sidebar').classList.toggle('open');
+    document.body.classList.toggle('sb-open', isOpen);
+  } else {
+    // 電腦：收合/展開
+    const collapsed = document.body.classList.toggle('sb-collapsed');
+    if(collapsed){ localStorage.setItem('sbCollapsed','1'); }
+    else { localStorage.removeItem('sbCollapsed'); }
+  }
 }
+// 保留相容性
+function toggleSB(){ toggleSidebar(); }
 function closeSidebar(){
   $('sidebar').classList.remove('open');
   document.body.classList.remove('sb-open');
