@@ -144,6 +144,7 @@ body.desktop-mode .today-banner{flex-direction:row !important;gap:0 !important;}
 body.desktop-mode .hdr-sync-wrap{display:flex !important;}
 body.desktop-mode .hdr-date-wrap{display:block !important;}
 body.desktop-mode #bk-list-wrap .card{display:block !important;}
+body.desktop-mode #hist-table-wrap{display:block !important;}
 body.desktop-mode .bk-card-list{display:none !important;}
 body.desktop-mode #cal-grid{display:block !important;}
 body.desktop-mode #cal-mobile{display:none !important;}
@@ -194,11 +195,16 @@ body.mobile-mode .cal-nav-mobile{display:flex !important;}
 .bk-card-meta{display:flex;gap:10px;font-size:12px;color:var(--txt3);margin-bottom:10px;flex-wrap:wrap;}
 .bk-card-actions{display:flex;gap:6px;flex-wrap:wrap;}
 body.mobile-mode #bk-list-wrap .card{display:none;}
+body.mobile-mode #hist-table-wrap{display:none;}
 body.mobile-mode .bk-card-list{display:flex;}
 body.mobile-mode .hdr-sync-wrap{display:none !important;}
 body.mobile-mode .hdr-date-wrap{display:none !important;}
+body.desktop-mode #sb-close-btn{display:flex !important;}
+#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;}
+body.desktop-mode.sb-open #sb-overlay{display:block;}
 @media(max-width:768px){
   #bk-list-wrap .card{display:none;}
+  #hist-table-wrap{display:none;}
   .bk-card-list{display:flex;}
 }
 
@@ -206,6 +212,7 @@ body.mobile-mode .hdr-date-wrap{display:none !important;}
 </head>
 <body>
 <div id="toast-box"></div>
+<div id="sb-overlay" onclick="closeSidebar()"></div>
 
 <div id="load-ov">
   <div class="ld-title">橋見幸福民宿</div>
@@ -216,9 +223,10 @@ body.mobile-mode .hdr-date-wrap{display:none !important;}
 <button id="mob-btn" onclick="toggleSB()">☰</button>
 
 <aside id="sidebar">
-  <div class="sb-logo">
+  <div class="sb-logo" style="position:relative;">
     <h1><span style="width:28px;height:28px;background:var(--orange);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🌿</span>橋見幸福民宿</h1>
     <p style="margin-top:6px;padding-left:36px;">內部營運管理系統</p>
+    <button id="sb-close-btn" onclick="closeSidebar()" style="display:none;position:absolute;top:14px;right:12px;width:28px;height:28px;border:1px solid var(--border);background:var(--bg);border-radius:8px;cursor:pointer;font-size:13px;align-items:center;justify-content:center;color:var(--txt3);">✕</button>
   </div>
   <div class="sb-date" id="sb-date"></div>
   <nav class="sb-nav">
@@ -375,7 +383,7 @@ body.mobile-mode .hdr-date-wrap{display:none !important;}
         <button class="btn btn-o btn-sm hist-f" onclick="filterHist('checkedout',this)">已退房</button>
         <button class="btn btn-o btn-sm hist-f" onclick="filterHist('cancelled',this)">已取消</button>
       </div>
-      <div class="card" style="padding:0;overflow:hidden;">
+      <div id="hist-table-wrap"><div class="card" style="padding:0;overflow:hidden;">
         <div class="tw"><table><thead><tr>
           <th onclick="sortHist('id')" style="cursor:pointer;user-select:none;white-space:nowrap;">編號 <span id="hsort-id" style="font-size:10px;opacity:.7;"></span></th>
           <th>房間</th>
@@ -385,7 +393,8 @@ body.mobile-mode .hdr-date-wrap{display:none !important;}
           <th>晚數</th><th>金額</th><th>狀態</th><th>操作</th>
         </tr></thead>
         <tbody id="hist-tbody"></tbody></table></div>
-      </div>
+      </div></div>
+      <div class="bk-card-list" id="hist-cards"></div>
     </div>
 
     <!-- FINANCE -->
@@ -636,6 +645,7 @@ function toggleViewMode() {
     document.body.classList.remove('mobile-mode');
     document.body.classList.add('desktop-mode');
     document.getElementById('sidebar').classList.remove('open');
+    document.body.classList.remove('sb-open');
     localStorage.setItem('viewMode','desktop');
     updateToggleBtn('desktop');
     showToast('🖥 已切換為電腦版顯示');
@@ -1011,10 +1021,18 @@ function goTo(s){
   $('pg-title').textContent=TITLES[s];
   curSec=s;
   $('sidebar').classList.remove('open');
+  document.body.classList.remove('sb-open');
   renderSec(s);
 }
 function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),history:renderHistory,finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
-function toggleSB(){$('sidebar').classList.toggle('open')}
+function toggleSB(){
+  const isOpen=$('sidebar').classList.toggle('open');
+  document.body.classList.toggle('sb-open',isOpen);
+}
+function closeSidebar(){
+  $('sidebar').classList.remove('open');
+  document.body.classList.remove('sb-open');
+}
 
 // ══════════════════════════════════════════
 // MODALS
@@ -1262,8 +1280,13 @@ function renderHistory(){
   ].map(s=>`<div style="background:${s.bg};color:${s.c};padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;">${s.label}<div style="font-size:18px;margin-top:2px;">${s.val}</div></div>`).join('');
   // 表格
   const tb=$('hist-tbody');
+  const cards=$('hist-cards');
   if(!tb)return;
-  if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無紀錄</td></tr>';return;}
+  if(!data.length){
+    tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無紀錄</td></tr>';
+    if(cards)cards.innerHTML='<div style="text-align:center;color:var(--txt3);padding:28px;font-size:14px;">無紀錄</div>';
+    return;
+  }
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
     return`<tr>
@@ -1280,6 +1303,33 @@ function renderHistory(){
         <button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b._uid||b.id}','${(b.nm||'').replace(/'/g,'')}')">刪除</button>
       </td>
     </tr>`;
+  }).join('');
+  if(cards)cards.innerHTML=data.map(b=>{
+    const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
+    const uid=b._uid||b.id,nm=(b.nm||'').replace(/'/g,'');
+    return`<div class="bk-card">
+      <div class="bk-card-top">
+        <div>
+          <div class="bk-card-name">${b.nm||'—'}</div>
+          <div class="bk-card-room">🏠 ${r?r.name:'—'}&nbsp;&nbsp;${b.ph||''}</div>
+        </div>
+        <span class="tag" style="background:${sc.bg};color:${sc.c};flex-shrink:0;">${BSLBL[b.st]||b.st}</span>
+      </div>
+      <div class="bk-card-dates">
+        <span style="color:var(--txt3);">入住</span><strong>${fmtDF(b.ci)}</strong>
+        <span style="color:var(--txt3);">→ 退房</span><strong>${fmtDF(b.co)}</strong>
+        <span style="color:var(--txt3);">(${n}晚)</span>
+      </div>
+      <div class="bk-card-meta">
+        <span>👥 ${b.g||'—'}人</span>
+        <span>💰 ${fmtM(b.amt)}</span>
+        <span>訂金 ${fmtM(b.dep)}</span>
+      </div>
+      <div class="bk-card-actions">
+        <button class="btn btn-o btn-sm" onclick="openEditBK('${uid}')">查看</button>
+        <button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#888;" onclick="deleteBK('${uid}','${nm}')">刪除</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
