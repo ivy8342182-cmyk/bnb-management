@@ -115,8 +115,58 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
   .gr{grid-template-columns:1fr 1fr}.today-banner{flex-direction:column;gap:10px}
 }
 @media(max-width:480px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.gr{grid-template-columns:1fr 1fr}}
+
+/* 手機模擬模式（由 JS 套用） */
+body.mobile-mode #sidebar{transform:translateX(-100%)}
+body.mobile-mode #sidebar.open{transform:translateX(0)}
+body.mobile-mode #main{margin-left:0}
+body.mobile-mode #mob-btn{display:flex}
+body.mobile-mode .pg-header{padding-left:62px}
+body.mobile-mode .pg-content{padding:14px}
+body.mobile-mode .g4{grid-template-columns:1fr 1fr}
+body.mobile-mode .g3{grid-template-columns:1fr 1fr}
+body.mobile-mode .g2{grid-template-columns:1fr}
+body.mobile-mode .gr{grid-template-columns:1fr 1fr}
+body.mobile-mode .today-banner{flex-direction:column;gap:10px}
+body.mobile-mode #view-toggle-btn{background:var(--orange);color:#fff;border-color:var(--orange);}
+body.desktop-mode #view-toggle-btn{background:#f0f0f0;color:#333;}
+#view-toggle-btn{border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap;}
 #toast-box{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;max-width:90vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 #toast-box.show{opacity:1}
+.bk-card-list{display:none;flex-direction:column;gap:10px;}
+/* 手機月曆 */
+#cal-mobile{display:none;flex-direction:column;gap:6px;}
+.cal-day-row{background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.cal-day-hdr{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--border);}
+.cal-day-num{font-size:18px;font-weight:700;min-width:28px;text-align:center;}
+.cal-day-wk{font-size:12px;color:var(--txt3);}
+.cal-day-bks{padding:6px 10px;display:flex;flex-direction:column;gap:4px;}
+.cal-day-bk{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:7px;font-size:13px;}
+.cal-day-bk-room{font-weight:600;min-width:36px;font-size:12px;}
+.cal-day-empty{padding:8px 12px;font-size:12px;color:var(--txt3);}
+body.mobile-mode #cal-grid{display:none;}
+body.mobile-mode #cal-mobile{display:flex;}
+body.mobile-mode .cal-nav-desktop{display:none;}
+body.mobile-mode .cal-nav-mobile{display:flex !important;}
+@media(max-width:768px){
+  #cal-grid{display:none;}
+  #cal-mobile{display:flex;}
+  .cal-nav-desktop{display:none;}
+  .cal-nav-mobile{display:flex !important;}
+}
+.bk-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.bk-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.bk-card-name{font-size:15px;font-weight:600;}
+.bk-card-room{font-size:13px;color:var(--txt3);margin-top:2px;}
+.bk-card-dates{display:flex;gap:6px;font-size:13px;margin-bottom:8px;align-items:center;flex-wrap:wrap;}
+.bk-card-meta{display:flex;gap:10px;font-size:12px;color:var(--txt3);margin-bottom:10px;flex-wrap:wrap;}
+.bk-card-actions{display:flex;gap:6px;flex-wrap:wrap;}
+body.mobile-mode #bk-list-wrap .card{display:none;}
+body.mobile-mode .bk-card-list{display:flex;}
+@media(max-width:768px){
+  #bk-list-wrap .card{display:none;}
+  .bk-card-list{display:flex;}
+}
 
 </style>
 </head>
@@ -162,6 +212,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <h2 id="pg-title">總覽儀表板</h2>
     <div style="display:flex;align-items:center;gap:14px;">
       <div style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
+      <button id="view-toggle-btn" onclick="toggleViewMode()">📱 手機版顯示</button>
       <div style="font-size:12px;color:var(--txt3)" id="hdr-date"></div>
     </div>
   </div>
@@ -230,16 +281,26 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 
       <!-- 月曆視圖 -->
       <div id="bk-cal-wrap" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <!-- 電腦版導覽 -->
+        <div class="cal-nav-desktop" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <button class="btn btn-o btn-sm" onclick="calNav(-1)">‹ 上個月</button>
           <span id="cal-title" style="font-weight:600;font-size:15px;"></span>
           <button class="btn btn-o btn-sm" onclick="calNav(1)">下個月 ›</button>
         </div>
-        <div class="card" style="padding:0;overflow:hidden;">
+        <!-- 手機版導覽（週切換）-->
+        <div class="cal-nav-mobile" style="display:none;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <button class="btn btn-o btn-sm" onclick="calWeekNav(-1)">‹ 上一週</button>
+          <span id="cal-title-mobile" style="font-weight:600;font-size:14px;"></span>
+          <button class="btn btn-o btn-sm" onclick="calWeekNav(1)">下一週 ›</button>
+        </div>
+        <!-- 電腦版大表格 -->
+        <div class="card cal-nav-desktop" style="padding:0;overflow:hidden;">
           <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
             <div id="cal-grid"></div>
           </div>
         </div>
+        <!-- 手機版直式週視圖 -->
+        <div id="cal-mobile"></div>
       </div>
 
       <div id="bk-list-wrap"><div class="card" style="padding:0;overflow:hidden;">
@@ -252,7 +313,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
           <th>人數</th><th>金額</th><th>狀態</th><th>操作</th>
         </tr></thead>
         <tbody id="bk-tbody"></tbody></table></div>
-      </div></div>
+      </div>
+      <div class="bk-card-list" id="bk-cards"></div>
+      </div>
     </div>
 
     <!-- HISTORY -->
@@ -514,6 +577,38 @@ const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null,
 // 讀取本機快取
 const ld = k => DB[k] || [];
 // 寫入 Firestore（非同步）
+// ── 視圖模式切換（手機 / 電腦）──
+function toggleViewMode() {
+  const isMobile = document.body.classList.contains('mobile-mode');
+  const tbtn = document.getElementById('view-toggle-btn');
+  if (isMobile) {
+    document.body.classList.remove('mobile-mode');
+    document.body.classList.add('desktop-mode');
+    document.getElementById('sidebar').classList.remove('open');
+    localStorage.setItem('viewMode','desktop');
+    if(tbtn) tbtn.textContent = '📱 手機版顯示';
+    showToast('🖥 已切換為電腦版顯示');
+  } else {
+    document.body.classList.remove('desktop-mode');
+    document.body.classList.add('mobile-mode');
+    document.getElementById('sidebar').classList.remove('open');
+    localStorage.setItem('viewMode','mobile');
+    if(tbtn) tbtn.textContent = '🖥 電腦版顯示';
+    showToast('📱 已切換為手機版顯示');
+  }
+}
+function initViewMode() {
+  const saved = localStorage.getItem('viewMode');
+  const mode = saved || (window.innerWidth <= 768 ? 'mobile' : 'desktop');
+  document.body.classList.add(mode + '-mode');
+  // 等 DOM 完整後設定按鈕文字
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const tbtn = document.getElementById('view-toggle-btn');
+    if(tbtn) tbtn.textContent = mode === 'mobile' ? '🖥 電腦版顯示' : '📱 手機版顯示';
+  }, {once:true});
+}
+initViewMode();
+
 let _pendingWrites = 0;
 function sv(k, data) {
   DB[k] = data;
@@ -972,10 +1067,46 @@ function renderBK(f){
   });
   updateSortArrows();
   const tb=$('bk-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
+  const cards=$('bk-cards');
+  if(!data.length){
+    tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';
+    if(cards)cards.innerHTML='<div style="text-align:center;color:var(--txt3);padding:28px;font-size:14px;">無訂房記錄</div>';
+    return;
+  }
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
     return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b._uid||b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b._uid||b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b._uid||b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" style="margin-right:3px;" onclick="cancelBK('${b._uid||b.id}')">取消</button>`:''}<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b._uid||b.id}','${(b.nm||'').replace(/'/g,'')}')">刪除</button></td></tr>`;
+  }).join('');
+  if(cards)cards.innerHTML=data.map(b=>{
+    const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
+    const uid=b._uid||b.id,nm=(b.nm||'').replace(/'/g,'');
+    const btns=[
+      b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${uid}')">✅ 入住</button>`:'',
+      b.st==='checkedin'?`<button class="btn btn-o btn-sm" onclick="checkOut('${uid}')">🚪 退房</button>`:'',
+      `<button class="btn btn-o btn-sm" onclick="openEditBK('${uid}')">編輯</button>`,
+      (b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" onclick="cancelBK('${uid}')">取消</button>`:'',
+      `<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#888;" onclick="deleteBK('${uid}','${nm}')">刪除</button>`
+    ].filter(Boolean).join('');
+    return`<div class="bk-card">
+      <div class="bk-card-top">
+        <div>
+          <div class="bk-card-name">${b.nm||'—'}</div>
+          <div class="bk-card-room">🏠 ${r?r.name:'—'}&nbsp;&nbsp;${b.ph||''}</div>
+        </div>
+        <span class="tag" style="background:${sc.bg};color:${sc.c};flex-shrink:0;">${BSLBL[b.st]||b.st}</span>
+      </div>
+      <div class="bk-card-dates">
+        <span style="color:var(--txt3);">入住</span><strong>${fmtDF(b.ci)}</strong>
+        <span style="color:var(--txt3);">→ 退房</span><strong>${fmtDF(b.co)}</strong>
+        <span style="color:var(--txt3);">(${n}晚)</span>
+      </div>
+      <div class="bk-card-meta">
+        <span>👥 ${b.g}人</span>
+        <span>💰 ${fmtM(b.amt)}</span>
+        <span>訂金 ${fmtM(b.dep)}</span>
+      </div>
+      <div class="bk-card-actions">${btns}</div>
+    </div>`;
   }).join('');
 }
 function setupBKModal(){
@@ -1376,6 +1507,63 @@ function calNav(dir){
   renderCal();
 }
 
+// 手機週視圖起始日 (預設本週一)
+let calWeekStart = (()=>{const d=new Date();d.setDate(d.getDate()-(d.getDay()||7)+1);d.setHours(0,0,0,0);return d;})();
+function calWeekNav(dir){
+  calWeekStart=new Date(calWeekStart);
+  calWeekStart.setDate(calWeekStart.getDate()+dir*7);
+  renderCalMobile();
+}
+function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function renderCalMobile(){
+  const rooms=ld(K.rooms),bks=ld(K.bk).filter(b=>b.st!=='cancelled');
+  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
+  const STATUS_BG={confirmed:'#EAF4FB',checkedin:'#FEF0E7',checkedout:'#F4F4F4'};
+  const t=today();
+  const weekEnd=new Date(calWeekStart);weekEnd.setDate(weekEnd.getDate()+6);
+  const titleEl=document.getElementById('cal-title-mobile');
+  if(titleEl){
+    const fmt=d=>(d.getMonth()+1)+'/'+d.getDate();
+    titleEl.textContent=fmt(calWeekStart)+' — '+fmt(weekEnd);
+  }
+  const wkLabels=['日','一','二','三','四','五','六'];
+  let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(calWeekStart);d.setDate(d.getDate()+i);
+    const ds=dateStr(d);
+    const isToday=ds===t,isWk=d.getDay()===0||d.getDay()===6;
+    const dayColor=isToday?'var(--orange)':isWk?'#E74C3C':'var(--txt)';
+    const dayBks=bks.filter(b=>b.ci<=ds&&b.co>ds);
+    html+=`<div class="cal-day-row">
+      <div class="cal-day-hdr" style="${isToday?'background:var(--orange-p);':isWk?'background:#FEF0E7;':''}">
+        <div class="cal-day-num" style="color:${dayColor};">${d.getDate()}</div>
+        <div>
+          <div style="font-size:11px;color:${dayColor};font-weight:${isToday?'700':'400'};">${wkLabels[d.getDay()]}${isToday?' · 今天':''}</div>
+          <div style="font-size:11px;color:var(--txt3);">${d.getMonth()+1}月</div>
+        </div>
+        ${dayBks.length?`<div style="margin-left:auto;font-size:11px;background:var(--orange);color:#fff;padding:2px 7px;border-radius:10px;">${dayBks.length}筆</div>`:''}
+      </div>
+      ${dayBks.length?`<div class="cal-day-bks">${dayBks.map(b=>{
+        const r=rooms.find(x=>x.id===b.rid);
+        const sc=STATUS_COLOR[b.st]||'#999';const sbg=STATUS_BG[b.st]||'#f5f5f5';
+        const isCI=b.ci===ds,isCO=addD(b.co,-1)===ds;
+        return`<div class="cal-day-bk" style="background:${sbg};border-left:3px solid ${sc};">
+          <div class="cal-day-bk-room" style="color:${sc};">${r?r.name:'—'}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;">${b.nm||'—'}</div>
+            <div style="font-size:11px;color:var(--txt3);">${isCI?'📥 入住日':''}${isCO?'📤 退房日':''}</div>
+          </div>
+          <div style="font-size:11px;color:var(--txt3);text-align:right;">
+            ${b.ci.slice(5)}→${b.co.slice(5)}
+          </div>
+        </div>`;
+      }).join('')}</div>`:`<div class="cal-day-empty">空房</div>`}
+    </div>`;
+  }
+  const el=document.getElementById('cal-mobile');
+  if(el)el.innerHTML=html;
+}
+
 function renderCal(){
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const rooms=ld(K.rooms),bks=ld(K.bk).filter(b=>b.st!=='cancelled');
@@ -1418,6 +1606,7 @@ function renderCal(){
     '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#95A5A622;border-left:2px solid #95A5A6;"></span>已退房</span>'+
     '</div>';
   document.getElementById('cal-grid').innerHTML=html;
+  renderCalMobile();
 }
 
 startListeners();
