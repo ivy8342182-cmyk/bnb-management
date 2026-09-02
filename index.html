@@ -141,6 +141,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
     <div class="nav-item active" onclick="goTo('dashboard')"><span class="nav-icon">📊</span>總覽儀表板</div>
     <div class="nav-item" onclick="goTo('rooms')"><span class="nav-icon">🏠</span>房間狀態</div>
     <div class="nav-item" onclick="goTo('bookings')"><span class="nav-icon">📅</span>訂房管理</div>
+    <div class="nav-item" onclick="goTo('history')"><span class="nav-icon">🗂️</span>訂房紀錄</div>
     <div class="nav-item" onclick="goTo('finance')"><span class="nav-icon">💰</span>帳務記錄</div>
     <div class="nav-item" onclick="goTo('cleaning')"><span class="nav-icon">🧹</span>清潔排班</div>
     <div class="nav-item" onclick="goTo('guests')"><span class="nav-icon">👥</span>顧客資料</div>
@@ -221,11 +222,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
         <div style="display:flex;gap:8px;"><button class="btn btn-o" id="bk-view-btn" onclick="toggleBKView()">📅 月曆視圖</button><button class="btn btn-p" onclick="openM('m-add-bk')">＋ 新增訂房</button></div>
       </div>
       <div id="bk-filters" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <button class="btn btn-o btn-sm bk-f active" onclick="filterBK('all',this)">全部</button>
+        <button class="btn btn-o btn-sm bk-f active" onclick="filterBK('active',this)">進行中</button>
         <button class="btn btn-o btn-sm bk-f" onclick="filterBK('confirmed',this)">已確認</button>
         <button class="btn btn-o btn-sm bk-f" onclick="filterBK('checkedin',this)">入住中</button>
-        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('checkedout',this)">已退房</button>
-        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('cancelled',this)">已取消</button>
+        <button class="btn btn-o btn-sm bk-f" onclick="filterBK('all',this)">全部</button>
       </div>
 
       <!-- 月曆視圖 -->
@@ -243,9 +243,45 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
       </div>
 
       <div id="bk-list-wrap"><div class="card" style="padding:0;overflow:hidden;">
-        <div class="tw"><table><thead><tr><th>編號</th><th>房間</th><th>客人</th><th>入住</th><th>退房</th><th>人數</th><th>金額</th><th>狀態</th><th>操作</th></tr></thead>
+        <div class="tw"><table><thead><tr>
+          <th onclick="sortBK('id')" style="cursor:pointer;user-select:none;white-space:nowrap;">編號 <span id="sort-id" style="font-size:10px;opacity:.7;"></span></th>
+          <th>房間</th>
+          <th>客人</th>
+          <th onclick="sortBK('ci')" style="cursor:pointer;user-select:none;white-space:nowrap;">入住 <span id="sort-ci" style="font-size:10px;opacity:.7;"></span></th>
+          <th onclick="sortBK('co')" style="cursor:pointer;user-select:none;white-space:nowrap;">退房 <span id="sort-co" style="font-size:10px;opacity:.7;"></span></th>
+          <th>人數</th><th>金額</th><th>狀態</th><th>操作</th>
+        </tr></thead>
         <tbody id="bk-tbody"></tbody></table></div>
       </div></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="section" id="s-history">
+      <div class="sh-hdr">
+        <div class="sh-ttl">訂房紀錄</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="hist-search" type="text" placeholder="搜尋客人姓名…" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:160px;" oninput="renderHistory()">
+        </div>
+      </div>
+      <!-- 統計列 -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;" id="hist-stats"></div>
+      <!-- 篩選 -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn btn-o btn-sm hist-f active" onclick="filterHist('all',this)">全部</button>
+        <button class="btn btn-o btn-sm hist-f" onclick="filterHist('checkedout',this)">已退房</button>
+        <button class="btn btn-o btn-sm hist-f" onclick="filterHist('cancelled',this)">已取消</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="tw"><table><thead><tr>
+          <th onclick="sortHist('id')" style="cursor:pointer;user-select:none;white-space:nowrap;">編號 <span id="hsort-id" style="font-size:10px;opacity:.7;"></span></th>
+          <th>房間</th>
+          <th>客人</th>
+          <th onclick="sortHist('ci')" style="cursor:pointer;user-select:none;white-space:nowrap;">入住 <span id="hsort-ci" style="font-size:10px;opacity:.7;"></span></th>
+          <th onclick="sortHist('co')" style="cursor:pointer;user-select:none;white-space:nowrap;">退房 <span id="hsort-co" style="font-size:10px;opacity:.7;"></span></th>
+          <th>晚數</th><th>金額</th><th>狀態</th><th>操作</th>
+        </tr></thead>
+        <tbody id="hist-tbody"></tbody></table></div>
+      </div>
     </div>
 
     <!-- FINANCE -->
@@ -478,12 +514,14 @@ const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null,
 // 讀取本機快取
 const ld = k => DB[k] || [];
 // 寫入 Firestore（非同步）
+let _pendingWrites = 0;
 function sv(k, data) {
   DB[k] = data;
+  _pendingWrites++;
   setSyncing(true);
   db.collection('bnb').doc(k).set({ data: JSON.parse(JSON.stringify(data)) })
-    .then(() => setSyncing(false))
-    .catch(e => { console.error(e); setSyncError(); });
+    .then(() => { _pendingWrites--; if(_pendingWrites<=0){_pendingWrites=0;setSyncing(false);} })
+    .catch(e => { _pendingWrites--; if(_pendingWrites<=0)_pendingWrites=0; console.error(e); setSyncError(); });
 }
 
 // 同步指示燈
@@ -530,7 +568,10 @@ function sortedJSON(v) {
 }
 
 // 手動檢查：從 Firestore 重新讀取並比對本機資料是否一致
+let _syncCheckLock = false;
 async function checkSyncNow() {
+  if (_syncCheckLock) { showToast('⏳ 同步檢查進行中，請稍候…'); return; }
+  _syncCheckLock = true;
   const dot = document.getElementById('sync-dot');
   const lbl = document.getElementById('sync-label');
   const tm = document.getElementById('sync-time');
@@ -538,7 +579,7 @@ async function checkSyncNow() {
   if (dot) dot.className = 'syncing';
   try {
     let mismatches = [];
-    for (const k of Object.keys(K)) {
+    for (const k of Object.values(K)) {
       const snap = await db.collection('bnb').doc(k).get();
       const cloudData = snap.exists ? sortedJSON(snap.data().data) : sortedJSON([]);
       const localData = sortedJSON(DB[k] || []);
@@ -562,6 +603,8 @@ async function checkSyncNow() {
     if (dot) dot.className = 'err';
     if (lbl) lbl.textContent = '連線失敗';
     showSyncConflictModal(null, null, e.message);
+  } finally {
+    _syncCheckLock = false;
   }
 }
 
@@ -611,7 +654,10 @@ function showSyncConflictModal(mismatches, mismatchNames, errMsg) {
         for (const k of mismatches) {
           await db.collection('bnb').doc(k).set({ data: JSON.parse(JSON.stringify(DB[k] || [])) });
         }
+        lastSyncTime = new Date();
         setSyncing(false);
+        const tm2 = document.getElementById('sync-time');
+        if(tm2) tm2.textContent = '(' + fmtTime(lastSyncTime) + ')';
         showToast('✅ 已將本機資料覆蓋至雲端');
       } catch(e) {
         setSyncError();
@@ -628,7 +674,10 @@ function showSyncConflictModal(mismatches, mismatchNames, errMsg) {
           const snap = await db.collection('bnb').doc(k).get();
           if (snap.exists) DB[k] = snap.data().data || [];
         }
+        lastSyncTime = new Date();
         setSyncing(false);
+        const tm3 = document.getElementById('sync-time');
+        if(tm3) tm3.textContent = '(' + fmtTime(lastSyncTime) + ')';
         renderSec(curSec);
         showToast('✅ 已從雲端重新載入資料');
       } catch(e) {
@@ -721,16 +770,18 @@ function repairBookingUIDs() {
   });
   if (changed) {
     DB['bookings'] = repaired;
+    _pendingWrites++;
+    setSyncing(true);
     db.collection('bnb').doc('bookings').set({ data: JSON.parse(JSON.stringify(repaired)) })
-      .then(() => { console.log('repair saved'); showToast('✅ 已自動修復重複訂房 ID'); })
-      .catch(e => console.error('repair error', e));
+      .then(() => { _pendingWrites--; if(_pendingWrites<=0){_pendingWrites=0;setSyncing(false);} console.log('repair saved'); showToast('✅ 已自動修復重複訂房 ID'); })
+      .catch(e => { _pendingWrites--; if(_pendingWrites<=0)_pendingWrites=0; console.error('repair error', e); setSyncError(); });
   }
 }
 
 // ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
-const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
+const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory']; // staff 暫未使用
 
 function startListeners() {
   const loaded = new Set();
@@ -763,7 +814,8 @@ function startListeners() {
       } else if (loaded.size === COL_KEYS.length) {
         // 後續更新：刷新當前頁面
         renderSec(curSec);
-        setSyncing(false);
+        // 只有沒有待寫入的情況才更新燈號，避免與 sv() 的計數競態
+        if(_pendingWrites <= 0) setSyncing(false);
       }
     }, err => {
       console.error('Firestore error:', k, err);
@@ -809,7 +861,7 @@ function goTo(s){
   $('sidebar').classList.remove('open');
   renderSec(s);
 }
-function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
+function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),history:renderHistory,finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
 function toggleSB(){$('sidebar').classList.toggle('open')}
 
 // ══════════════════════════════════════════
@@ -884,19 +936,41 @@ function addRoom(){
 // ══════════════════════════════════════════
 const BSLBL={confirmed:'已確認',checkedin:'入住中',checkedout:'已退房',cancelled:'已取消'};
 const BSCLR={confirmed:{bg:'#EBF5FB',c:'#1A5276'},checkedin:{bg:'#E9F7EF',c:'#1A9E52'},checkedout:{bg:'#F4F6F7',c:'#717D7E'},cancelled:{bg:'#FDEDEC',c:'#C0392B'}};
-let curBKF='all';
+let curBKF='active';
+let curBKSort={col:'ci',dir:'asc'};
+function sortBK(col){
+  if(curBKSort.col===col){curBKSort.dir=curBKSort.dir==='asc'?'desc':'asc';}
+  else{curBKSort={col,dir:'asc'};}
+  renderBK(curBKF);
+}
+function updateSortArrows(){
+  ['id','ci','co'].forEach(c=>{
+    const el=document.getElementById('sort-'+c);
+    if(!el)return;
+    if(curBKSort.col===c) el.textContent=curBKSort.dir==='asc'?'▲':'▼';
+    else el.textContent='⇅';
+  });
+}
 function filterBK(f,btn){curBKF=f;document.querySelectorAll('.bk-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderBK(f)}
 function renderBK(f){
   const bks=ld(K.bk),rooms=ld(K.rooms);
-  let data=(f==='all'?bks:bks.filter(b=>b.st===f)).sort((a,b)=>{
-    // 嘗試用 ID 內的時間戳或數字排序（新的在前）
-    const getNum = id => {
-      if(!id) return 0;
-      const m = id.replace('BK','').match(/^(\d+)/);
-      return m ? parseInt(m[1]) : 0;
-    };
-    return getNum(b.id) - getNum(a.id);
+  let data=f==='all'?bks
+    :f==='active'?bks.filter(b=>b.st==='confirmed'||b.st==='checkedin')
+    :bks.filter(b=>b.st===f);
+  const {col,dir}=curBKSort;
+  data=[...data].sort((a,b)=>{
+    let va,vb;
+    if(col==='id'){
+      const getNum=id=>{if(!id)return 0;const m=id.replace('BK','').match(/^(\d+)/);return m?parseInt(m[1]):0;};
+      va=getNum(a.id);vb=getNum(b.id);
+    } else {
+      va=a[col]||'';vb=b[col]||'';
+    }
+    if(va<vb)return dir==='asc'?-1:1;
+    if(va>vb)return dir==='asc'?1:-1;
+    return 0;
   });
+  updateSortArrows();
   const tb=$('bk-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無訂房記錄</td></tr>';return}
   tb.innerHTML=data.map(b=>{
@@ -952,6 +1026,73 @@ function checkOut(uid){
 function cancelBK(uid){
   if(!confirm('確認取消此訂房？'))return;
   const bks=ld(K.bk),b=bks.find(x=>(x._uid||x.id)===uid);if(b){b.st='cancelled';sv(K.bk,bks)}
+}
+
+// ══════════════════════════════════════════
+// 訂房紀錄
+// ══════════════════════════════════════════
+let curHistF='all';
+let curHistSort={col:'co',dir:'desc'};
+function filterHist(f,btn){curHistF=f;document.querySelectorAll('.hist-f').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHistory();}
+function sortHist(col){
+  if(curHistSort.col===col){curHistSort.dir=curHistSort.dir==='asc'?'desc':'asc';}
+  else{curHistSort={col,dir:'desc'};}
+  renderHistory();
+}
+function renderHistory(){
+  const bks=ld(K.bk),rooms=ld(K.rooms);
+  const q=($('hist-search')||{value:''}).value.trim().toLowerCase();
+  // 只顯示已退房 + 已取消
+  let data=bks.filter(b=>b.st==='checkedout'||b.st==='cancelled');
+  if(curHistF!=='all') data=data.filter(b=>b.st===curHistF);
+  if(q) data=data.filter(b=>(b.nm||'').toLowerCase().includes(q)||(b.id||'').toLowerCase().includes(q));
+  // 排序
+  const {col,dir}=curHistSort;
+  data=[...data].sort((a,b)=>{
+    let va=a[col]||'',vb=b[col]||'';
+    if(va<vb)return dir==='asc'?-1:1;
+    if(va>vb)return dir==='asc'?1:-1;
+    return 0;
+  });
+  // 更新排序箭頭
+  ['id','ci','co'].forEach(c=>{
+    const el=document.getElementById('hsort-'+c);
+    if(!el)return;
+    if(curHistSort.col===c) el.textContent=curHistSort.dir==='asc'?'▲':'▼';
+    else el.textContent='⇅';
+  });
+  // 統計列
+  const allHist=bks.filter(b=>b.st==='checkedout'||b.st==='cancelled');
+  const totalRev=allHist.filter(b=>b.st==='checkedout').reduce((s,b)=>s+(+b.amt||0),0);
+
+  const statsEl=$('hist-stats');
+  if(statsEl) statsEl.innerHTML=[
+    {label:'歷史訂房',val:allHist.length+'筆',bg:'#EBF5FB',c:'#1A5276'},
+    {label:'已退房',val:allHist.filter(b=>b.st==='checkedout').length+'筆',bg:'#E9F7EF',c:'#1A9E52'},
+    {label:'已取消',val:allHist.filter(b=>b.st==='cancelled').length+'筆',bg:'#FDEDEC',c:'#C0392B'},
+    {label:'歷史總收入',val:'$'+totalRev.toLocaleString(),bg:'#FDF2E4',c:'#D4680A'},
+  ].map(s=>`<div style="background:${s.bg};color:${s.c};padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;">${s.label}<div style="font-size:18px;margin-top:2px;">${s.val}</div></div>`).join('');
+  // 表格
+  const tb=$('hist-tbody');
+  if(!tb)return;
+  if(!data.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--txt3);padding:28px;">無紀錄</td></tr>';return;}
+  tb.innerHTML=data.map(b=>{
+    const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
+    return`<tr>
+      <td><code style="font-size:12px;">${b.id}</code></td>
+      <td><strong>${r?r.name:'—'}</strong></td>
+      <td>${b.nm||'—'}<br><span style="font-size:12px;color:var(--txt3);">${b.ph||''}</span></td>
+      <td>${fmtDF(b.ci)}</td>
+      <td>${fmtDF(b.co)}</td>
+      <td>${n}晚</td>
+      <td style="font-family:'Noto Sans TC',sans-serif;">${fmtM(b.amt)}<br><span style="font-size:11px;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td>
+      <td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b._uid||b.id}')">查看</button>
+        <button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b._uid||b.id}','${(b.nm||'').replace(/'/g,'')}')">刪除</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════
