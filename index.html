@@ -41,8 +41,9 @@ body.sb-collapsed #main{margin-left:0 !important;}
 body.sb-collapsed #sb-float-btn{display:flex !important;}
 body.sb-collapsed #pg-title{padding-left:56px !important;}
 body.mobile-mode #sb-float-btn{display:flex !important;}
+body.mobile-mode.sb-open #sb-float-btn{display:none !important;}
 body.mobile-mode #pg-title{padding-left:56px !important;}
-@media(max-width:768px){ #sb-float-btn{display:flex !important;} #pg-title{padding-left:56px !important;} }
+@media(max-width:768px){ #sb-float-btn{display:flex !important;} .sb-open #sb-float-btn{display:none !important;} #pg-title{padding-left:56px !important;} }
 .sb-logo{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
 .sb-logo h1{font-size:15px;font-weight:700;color:var(--txt);line-height:1.4;display:flex;align-items:center;gap:8px}
 .sb-logo p{font-size:11px;color:var(--txt3);margin-top:2px}
@@ -240,7 +241,7 @@ body.sb-open #sb-overlay{display:block;}
     <span style="font-size:18px;">☰</span><span id="sb-toggle-label" style="font-size:12px;font-weight:500;opacity:.9;">收合選單</span>
   </button>
   <div class="sb-logo" style="position:relative;">
-    <h1><span style="width:28px;height:28px;background:var(--orange);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🌿</span>橋見幸福民宿</h1>
+    <h1><span style="width:28px;height:28px;background:var(--orange);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🏠</span>橋見幸福民宿</h1>
     <p style="margin-top:6px;padding-left:36px;">內部營運管理系統</p>
 
   </div>
@@ -300,11 +301,17 @@ body.sb-open #sb-overlay{display:block;}
         <div class="stat"><div class="stat-lb">本月收入</div><div class="stat-vl inc" id="d-inc" style="font-size:26px;">$0</div></div>
         <div class="stat"><div class="stat-lb">本月訂房</div><div class="stat-vl" id="d-bk">0</div><div class="stat-sb">筆</div></div>
       </div>
+      <!-- 今日快速操作 -->
+      <div style="font-size:12px;color:var(--txt3);font-weight:600;letter-spacing:.06em;margin-bottom:10px;">今日快速操作</div>
       <div class="g2">
-        <div class="card"><div class="card-title">📥 今日入住</div><div id="d-ci-list"></div></div>
-        <div class="card"><div class="card-title">📤 今日退房</div><div id="d-co-list"></div></div>
+        <div class="card"><div class="card-title">📥 今日入住 <span id="d-ci-badge" style="font-size:11px;background:var(--orange);color:#fff;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div><div id="d-ci-list"></div></div>
+        <div class="card"><div class="card-title">📤 今日退房 <span id="d-co-badge" style="font-size:11px;background:var(--orange);color:#fff;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div><div id="d-co-list"></div></div>
       </div>
-      <div class="card mt16" id="d-low" style="display:none;">
+      <div class="g2" style="margin-top:12px;">
+        <div class="card"><div class="card-title">🧹 今日清潔 <span id="d-cl-badge" style="font-size:11px;background:#9B59B6;color:#fff;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div><div id="d-cl-list"></div></div>
+        <div class="card"><div class="card-title">📋 明日入住 <span id="d-tom-badge" style="font-size:11px;background:#2E86C1;color:#fff;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div><div id="d-tom-list"></div></div>
+      </div>
+      <div class="card mt16" id="d-low" style="display:none;margin-top:12px;">
         <div class="card-title">⚠️ 備品庫存警告</div>
         <div id="d-low-items"></div>
       </div>
@@ -442,7 +449,10 @@ body.sb-open #sb-overlay{display:block;}
     <div class="section" id="s-cleaning">
       <div class="sh-hdr">
         <div class="sh-ttl">清潔排班</div>
-        <button class="btn btn-p" onclick="openCleanModal()">＋ 新增任務</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-o" onclick="openStaffModal()">👤 管理人員</button>
+          <button class="btn btn-p" onclick="openCleanModal()">＋ 新增任務</button>
+        </div>
       </div>
       <div class="g2">
         <div class="card"><div class="card-title">今日任務</div><div id="cl-today"></div></div>
@@ -558,6 +568,26 @@ body.sb-open #sb-overlay{display:block;}
 </div>
 
 <!-- Add Cleaning -->
+<!-- 人員管理 Modal -->
+<div class="modal-ov" id="m-staff">
+  <div class="modal-bx" style="max-width:400px;">
+    <div class="modal-hdr">
+      <div class="modal-ttl">👤 清潔人員管理</div>
+      <button class="modal-x" onclick="closeM('m-staff')">✕</button>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="staff-new-name" placeholder="輸入新增人員姓名" style="flex:1;">
+        <button class="btn btn-p" onclick="addStaff()">新增</button>
+      </div>
+      <div id="staff-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="btn btn-o" onclick="closeM('m-staff')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-ov" id="m-add-cl">
   <div class="modal">
     <div class="modal-hdr"><div class="modal-ttl">新增清潔任務</div><button class="modal-x" onclick="closeM('m-add-cl')">✕</button></div>
@@ -964,7 +994,7 @@ function repairBookingUIDs() {
 // ══════════════════════════════════════════
 // 啟動：從 Firestore 載入所有資料 + 即時監聽
 // ══════════════════════════════════════════
-const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory']; // staff 暫未使用
+const COL_KEYS = ['rooms','bookings','finance','cleaning','guests','inventory','staff'];
 
 function startListeners() {
   const loaded = new Set();
@@ -1095,6 +1125,46 @@ function renderDash(){
   ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
   const coL=$('d-co-list');
   coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
+  // 計數徽章
+  const ciBadge=$('d-ci-badge'); if(ciBadge) ciBadge.textContent=ci.length?ci.length+'筆':'';
+  const coBadge=$('d-co-badge'); if(coBadge) coBadge.textContent=co.length?co.length+'筆':'';
+
+  // 今日清潔任務
+  const cl=ld(K.cl);
+  const clToday=cl.filter(c=>c.dt===t);
+  const clBadge=$('d-cl-badge'); if(clBadge) clBadge.textContent=clToday.length?clToday.length+'項':'';
+  const clList=$('d-cl-list');
+  if(clList) clList.innerHTML=clToday.length?clToday.map(c=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-weight:500;">${c.rnm}</div>
+        <div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div>
+        ${c.note?`<div style="font-size:11px;color:var(--txt3);">${c.note}</div>`:''}
+      </div>
+      ${!c.done
+        ?`<button class="btn btn-g btn-sm" onclick="togCL('${c.id}');renderDash();">✓ 完成</button>`
+        :`<span class="tag" style="background:#E9F7EF;color:#1A9E52;">已完成</span>`
+      }
+    </div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無清潔任務</div>';
+
+  // 明日入住提醒
+  const tom=addD(t,1);
+  const tomCI=bks.filter(b=>b.ci===tom&&b.st==='confirmed');
+  const tomBadge=$('d-tom-badge'); if(tomBadge) tomBadge.textContent=tomCI.length?tomCI.length+'筆':'';
+  const tomList=$('d-tom-list');
+  if(tomList) tomList.innerHTML=tomCI.length?tomCI.map(b=>{
+    const r=rooms.find(x=>x.id===b.rid);
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-weight:500;">${b.nm}</div>
+        <div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人 · ${b.co}退</div>
+        ${b.ph?`<div style="font-size:11px;color:var(--txt3);">${b.ph}</div>`:''}
+      </div>
+      <span class="tag" style="background:#EAF1FB;color:#1A5276;">明日</span>
+    </div>`;
+  }).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">明日無入住</div>';
+
+  // 備品警告
   const low=inv.filter(i=>i.stk<=i.min);
   const ld2=$('d-low');
   if(low.length){ld2.style.display='block';$('d-low-items').innerHTML=low.map(i=>`<div style="padding:5px 0;font-size:13px;">⚠️ <strong>${i.nm}</strong>：剩 ${i.stk} ${i.unit}（需 ${i.min} ${i.unit}）</div>`).join('')}
@@ -1241,7 +1311,8 @@ function addBK(){
     bks.push({id:newBKID,rid:room.id,rnm:room.name,nm,ph,ci,co,g:+$v('bk-g')||2,amt:+$v('bk-amt')||0,dep:+$v('bk-dp')||0,src:$v('bk-src'),st:'confirmed',note:$v('bk-note')});
   });
   sv(K.bk,bks);closeM('m-add-bk');renderBK(curBKF);
-  showToast('✅ 已新增 '+checked.length+' 間房訂房');
+  bks.slice(-checked.length).forEach(b=>upsertClTask(b));
+  showToast('✅ 已新增 '+checked.length+' 間房訂房，清潔任務已預排');
 }
 
 function checkIn(uid){
@@ -1255,16 +1326,39 @@ function checkOut(uid){
   const bks=ld(K.bk),rooms=ld(K.rooms),b=bks.find(x=>(x._uid||x.id)===uid);if(!b)return;
   b.st='checkedout';
   const ri=rooms.findIndex(r=>r.id===b.rid);
-  const rm=rooms[ri];
   if(ri>=0)rooms[ri].status='cleaning';
-  const cl=ld(K.cl);
-  cl.push({id:uid('C'),dt:today(),rid:b.rid,rnm:rm?rm.name:'',tp:'退房清潔',st:'待分配',done:false,note:`退房：${b.nm}`});
-  sv(K.bk,bks);sv(K.rooms,rooms);sv(K.cl,cl);
-  alert('退房完成！已自動新增清潔任務。');
+  sv(K.bk,bks);sv(K.rooms,rooms);
+  upsertClTask({...b,co:today()}, rooms);
+  showToast('✅ 退房完成！清潔任務已更新為今日');
 }
 function cancelBK(uid){
   if(!confirm('確認取消此訂房？'))return;
-  const bks=ld(K.bk),b=bks.find(x=>(x._uid||x.id)===uid);if(b){b.st='cancelled';sv(K.bk,bks)}
+  const bks=ld(K.bk),b=bks.find(x=>(x._uid||x.id)===uid);
+  if(b){ b.st='cancelled'; sv(K.bk,bks); removeClTask(b.id); showToast('✅ 訂房已取消，清潔任務已移除'); }
+}
+
+// ══════════════════════════════════════════
+// 清潔排班自動連動
+// ══════════════════════════════════════════
+function upsertClTask(b, rooms){
+  const rm=(rooms||ld(K.rooms)).find(r=>r.id===b.rid);
+  const cl=ld(K.cl);
+  const idx=cl.findIndex(c=>c.bkid===b.id);
+  const task={
+    id:idx>=0?cl[idx].id:uid('C'),
+    bkid:b.id, dt:b.co, rid:b.rid,
+    rnm:rm?rm.name:(b.rnm||''),
+    tp:'退房清潔', st:'待分配',
+    done:idx>=0?cl[idx].done:false,
+    note:'訂房連動：'+(b.nm||'')+'（'+b.ci+'→'+b.co+'）',
+    auto:true
+  };
+  if(idx>=0){ cl[idx]={...cl[idx],...task,done:cl[idx].done}; }
+  else { cl.push(task); }
+  sv(K.cl,cl);
+}
+function removeClTask(bkid){
+  sv(K.cl, ld(K.cl).filter(c=>c.bkid!==bkid));
 }
 
 // ══════════════════════════════════════════
@@ -1408,7 +1502,7 @@ function delFin(id){if(!confirm('確認刪除？'))return;sv(K.fin,ld(K.fin).fil
 function openCleanModal(){
   $('cl-dt').value=today();
   $('cl-rm').innerHTML=(ld(K.rooms)).map(r=>`<option value="${r.id}" data-nm="${r.name}">${r.name}</option>`).join('');
-  const staff=DB.staff&&DB.staff.length?DB.staff:['小美','小華','大明','待分配'];
+  const staff=getStaff();
   $('cl-st').innerHTML=staff.map(s=>`<option>${s}</option>`).join('');
   openM('m-add-cl');
 }
@@ -1421,7 +1515,73 @@ function renderCL(){
   const $up=$('cl-upcoming');
   $up.innerHTML=up.length?up.sort((a,b)=>a.dt.localeCompare(b.dt)).map(c=>`<div class="clean-task"><div style="width:38px;text-align:center;font-size:12px;color:var(--amber);font-weight:500;">${fmtD(c.dt)}<br><span style="font-size:10px;color:var(--txt3);">週${dayLbl(c.dt)}</span></div><div style="flex:1;"><div style="font-weight:500;">${c.rnm}</div><div style="font-size:12px;color:var(--txt3);">${c.tp} · ${c.st}</div></div></div>`).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">近期無排班</div>';
   const all=[...cl].sort((a,b)=>b.dt.localeCompare(a.dt));
-  $('cl-tbody').innerHTML=all.map(c=>`<tr><td>${fmtDF(c.dt)}</td><td>${c.rnm}</td><td>${c.tp}</td><td>${c.st}</td><td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td><td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td><td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditCL('${c.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delCL('${c.id}')">刪除</button></td></tr>`).join('');
+  $('cl-tbody').innerHTML=all.map(c=>`<tr>
+  <td>${fmtDF(c.dt)}</td>
+  <td>${c.rnm}</td>
+  <td>${c.tp}${c.auto?'<span style="font-size:10px;background:#FEF0E7;color:var(--orange);border-radius:4px;padding:1px 5px;margin-left:5px;">自動</span>':''}</td>
+  <td>${c.st}</td>
+  <td><span class="tag" style="background:${c.done?'#E9F7EF':'#FDF2E4'};color:${c.done?'#1A9E52':'#D4680A'};">${c.done?'已完成':'待清潔'}</span></td>
+  <td style="font-size:12px;color:var(--txt3);">${c.note||'—'}</td>
+  <td style="white-space:nowrap;">${!c.done?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="togCL('${c.id}')">完成</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditCL('${c.id}')">編輯</button><button class="btn btn-d btn-sm" onclick="delCL('${c.id}')">刪除</button></td>
+</tr>`).join('');
+}
+function getStaff(){
+  const s=DB['staff'];
+  return (s && Array.isArray(s) && s.length) ? s : ['待分配'];
+}
+function saveStaff(list){
+  DB['staff']=list;
+  db.collection('bnb').doc('staff').set({data:list}).catch(e=>console.error(e));
+}
+function openStaffModal(){
+  renderStaffList();
+  openM('m-staff');
+}
+function renderStaffList(){
+  const staff=getStaff();
+  const el=$('staff-list');
+  if(!el)return;
+  if(!staff.length){el.innerHTML='<div style="text-align:center;color:var(--txt3);padding:20px;font-size:13px;">尚未新增人員</div>';return;}
+  el.innerHTML=staff.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;">
+      <span style="font-size:14px;">👤</span>
+      <input id="staff-edit-${i}" value="${s}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <button class="btn btn-g btn-sm" onclick="updateStaff(${i})">儲存</button>
+      <button class="btn btn-d btn-sm" onclick="removeStaff(${i})">刪除</button>
+    </div>`).join('');
+}
+function addStaff(){
+  const nm=($('staff-new-name').value||'').trim();
+  if(!nm){showToast('⚠️ 請輸入姓名');return;}
+  const staff=getStaff();
+  if(staff.includes(nm)){showToast('⚠️ 此人員已存在');return;}
+  staff.push(nm);
+  saveStaff(staff);
+  $('staff-new-name').value='';
+  renderStaffList();
+  showToast('✅ 已新增 '+nm);
+}
+function updateStaff(i){
+  const nm=($('staff-edit-'+i)?.value||'').trim();
+  if(!nm){showToast('⚠️ 名稱不能為空');return;}
+  const staff=getStaff();
+  const old=staff[i];
+  staff[i]=nm;
+  saveStaff(staff);
+  // 同步更新清潔任務裡的人員名稱
+  const cl=ld(K.cl).map(c=>c.st===old?{...c,st:nm}:c);
+  sv(K.cl,cl);
+  renderStaffList();
+  showToast('✅ 已更新');
+}
+function removeStaff(i){
+  const staff=getStaff();
+  const nm=staff[i];
+  if(!confirm('確認刪除人員「'+nm+'」？'))return;
+  staff.splice(i,1);
+  saveStaff(staff);
+  renderStaffList();
+  showToast('✅ 已刪除 '+nm);
 }
 function togCL(id){const cl=ld(K.cl),c=cl.find(x=>x.id===id);if(c){c.done=!c.done;sv(K.cl,cl)}}
 function delCL(id){if(!confirm('確認刪除？'))return;sv(K.cl,ld(K.cl).filter(c=>c.id!==id))}
@@ -1516,6 +1676,7 @@ function deleteBK(uid, nm){
   if(!confirm('確認刪除訂房 '+target.id+'（'+(target.nm||nm||'')+'）？'))return;
   const after = bks.filter(b=>(b._uid||b.id)!==uid);
   sv(K.bk, after);
+  removeClTask(target.id);
   renderBK(curBKF);
   showToast('✅ 已刪除 '+target.id+' '+(target.nm||''));
 }
@@ -1549,7 +1710,9 @@ function saveBK(){
   sv(K.bk, bks);
   closeM('m-edit-bk');
   renderBK(curBKF);
-  showToast('✅ 已更新');
+  const updBk=bks.find(x=>(x._uid||x.id)===editBKUID);
+  if(updBk) upsertClTask(updBk);
+  showToast('✅ 已更新，清潔任務已同步');
 }
 
 // ── 清潔編輯
@@ -1561,7 +1724,7 @@ function openEditCL(id){
   $('ecl-rm').innerHTML = ld(K.rooms).map(r=>`<option value="${r.id}" data-nm="${r.name}"${r.id===c.rid?' selected':''}>${r.name}</option>`).join('');
   $('ecl-dt').value = c.dt||'';
   $('ecl-tp').value = c.tp||'一般清潔';
-  const staff=DB.staff&&DB.staff.length?DB.staff:['小美','小華','大明','待分配'];
+  const staff=getStaff();
   $('ecl-st').innerHTML = staff.map(s=>`<option${s===c.st?' selected':''}>${s}</option>`).join('');
   $('ecl-note').value = c.note||'';
   openM('m-edit-cl');
