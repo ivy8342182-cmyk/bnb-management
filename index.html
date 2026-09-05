@@ -1999,7 +1999,7 @@ function renderMobWeek(){
           <div class="cal-day-bk-room" style="color:${sc};">${r?r.name:'—'}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:13px;">${b.nm||'—'}</div>
-            <div style="font-size:11px;color:var(--txt3);">${isCI?'📥入住':''}${isCO?'📤退房':''} ${b.ci.slice(5)}→${b.co.slice(5)}</div>
+            <div style="font-size:11px;color:var(--txt3);">入住 ${b.ci.slice(5)} &nbsp;退房 ${b.co.slice(5)}</div>
           </div>
         </div>`;
       }).join('')}</div>`:`<div class="cal-day-empty">空房</div>`}
