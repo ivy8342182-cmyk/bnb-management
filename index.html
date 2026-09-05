@@ -222,6 +222,7 @@ body.sb-open #sb-overlay{display:block;}
 }
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div id="toast-box"></div>
@@ -337,7 +338,7 @@ body.sb-open #sb-overlay{display:block;}
     <div class="section" id="s-bookings">
       <div class="sh-hdr">
         <div class="sh-ttl">訂房管理</div>
-        <div style="display:flex;gap:8px;"><button class="btn btn-o" id="bk-view-btn" onclick="toggleBKView()">📅 月曆視圖</button><button class="btn btn-p" onclick="openM('m-add-bk')">＋ 新增訂房</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-o" id="bk-view-btn" onclick="toggleBKView()">📅 月曆視圖</button><button class="btn btn-o" onclick="exportBKImage()">📸 匯出圖片</button><button class="btn btn-p" onclick="openM('m-add-bk')">＋ 新增訂房</button></div>
       </div>
       <div id="bk-filters" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
         <button class="btn btn-o btn-sm bk-f active" onclick="filterBK('active',this)">進行中</button>
@@ -1205,6 +1206,264 @@ function addRoom(){
   const rooms=ld(K.rooms);
   rooms.push({id:Date.now(),name:nm,num,type:$v('rn-type'),cap:+$v('rn-cap')||2,price:+$v('rn-price')||0,status:$v('rn-st'),note:$v('rn-note'),color:$v('rn-color')||ROOM_COLORS[rooms.length%ROOM_COLORS.length]});
   sv(K.rooms,rooms);closeM('m-add-room');['rn-name','rn-num','rn-price','rn-note'].forEach(x=>$(x).value='');
+}
+
+
+// ══════════════════════════════════════════
+// 匯出訂房一覽（月曆 + 清單整合圖片）
+// ══════════════════════════════════════════
+function exportBKImage(){
+  // 彈出月份選擇
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  const now=new Date();
+  const thisY=now.getFullYear(),thisM=now.getMonth();
+  const nextY=thisM===11?thisY+1:thisY,nextM=thisM===11?0:thisM+1;
+  const fmtMon=(y,m)=>y+'年'+(m+1)+'月';
+  overlay.innerHTML=`<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+    <div style="font-size:17px;font-weight:700;margin-bottom:6px;">📸 匯出訂房一覽</div>
+    <div style="font-size:13px;color:#888;margin-bottom:20px;">月曆視圖 + 訂房清單整合成一張圖片</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button id="ex-this" style="padding:12px;background:#F26522;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;">本月 ${fmtMon(thisY,thisM)}</button>
+      <button id="ex-next" style="padding:12px;background:#EAF1FB;color:#185FA5;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;">下個月 ${fmtMon(nextY,nextM)}</button>
+      <button onclick="this.closest('div').parentElement.remove()" style="padding:10px;background:#f5f5f5;color:#888;border:none;border-radius:10px;font-size:13px;cursor:pointer;">取消</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ex-this').onclick=()=>{overlay.remove();drawBKExport(thisY,thisM);};
+  overlay.querySelector('#ex-next').onclick=()=>{overlay.remove();drawBKExport(nextY,nextM);};
+}
+
+function drawBKExport(year, month){
+  showToast('⏳ 產生圖片中…');
+  setTimeout(()=>{
+    try{ _drawBKExport(year,month); }
+    catch(e){ showToast('❌ 匯出失敗：'+e.message); }
+  },50);
+}
+
+function _drawBKExport(year, month){
+  const bks=ld(K.bk).filter(b=>b.st!=='cancelled');
+  const rooms=ld(K.rooms);
+  const ORANGE='#F26522';
+  const LIGHT_ORANGE='#FEF0E7';
+
+  // 該月份日期範圍
+  const monthStr=String(month+1).padStart(2,'0');
+  const firstDay=String(year)+'-'+monthStr+'-01';
+  const lastDay=String(year)+'-'+monthStr+'-'+String(new Date(year,month+1,0).getDate()).padStart(2,'0');
+
+  // 該月有訂房的記錄（含跨月）
+  const monthBks=bks.filter(b=>b.ci<=lastDay&&b.co>firstDay);
+  // 本月內有入住的清單（以入住日排序）
+  const listBks=bks.filter(b=>b.ci>=firstDay&&b.ci<=lastDay&&b.st!=='cancelled').sort((a,b)=>a.ci<b.ci?-1:1);
+
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstWeekDay=new Date(year,month,1).getDay(); // 0=日
+  const t=today();
+  const wkLabels=['日','一','二','三','四','五','六'];
+
+  // ── Canvas 尺寸規劃 ──
+  const W=1000, PAD=24;
+  const CELL_W=Math.floor((W-PAD*2)/7);
+  const CELL_H=72;
+  const CAL_ROWS=Math.ceil((firstWeekDay+daysInMonth)/7);
+  const CAL_H=28+CAL_ROWS*CELL_H; // 月曆高度（含星期列）
+  const TITLE_H=64;
+  const SEC_H=36; // 區塊標題
+  const LIST_ROW_H=38;
+  const LIST_COLS=[80,140,150,110,110,80,100];
+  const LIST_LABELS=['房間','客人','入住','退房','狀態','人數','金額'];
+  const FOOT_H=32;
+  const TOTAL_H=TITLE_H+8+CAL_H+16+SEC_H+LIST_ROW_H+(listBks.length||1)*LIST_ROW_H+FOOT_H+PAD;
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W; canvas.height=TOTAL_H;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#F7F6F2';
+  ctx.fillRect(0,0,W,TOTAL_H);
+
+  let y=0;
+
+  // ── 標題列 ──
+  ctx.fillStyle=ORANGE;
+  ctx.fillRect(0,0,W,TITLE_H);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 22px sans-serif';
+  ctx.fillText('🏠 橋見幸福民宿 · '+year+'年'+(month+1)+'月 訂房一覽', PAD, 34);
+  ctx.font='13px sans-serif';
+  ctx.fillStyle='rgba(255,255,255,.8)';
+  const dt=(new Date().toLocaleDateString('zh-TW'))+'  製表';
+  ctx.fillText(dt, W-PAD-ctx.measureText(dt).width, 34);
+  ctx.fillStyle='rgba(255,255,255,.7)';
+  ctx.font='12px sans-serif';
+  ctx.fillText('本月訂房 '+monthBks.length+' 筆　入住清單 '+listBks.length+' 筆', PAD, 52);
+  y=TITLE_H+8;
+
+  // ── 月曆區塊 ──
+  const calX=PAD, calW=W-PAD*2;
+  ctx.fillStyle='#fff';
+  roundRect(ctx, calX, y, calW, CAL_H, 10);
+  ctx.fillStyle='#fff';
+  ctx.fill();
+
+  // 星期標題
+  for(let i=0;i<7;i++){
+    const cx=calX+i*CELL_W;
+    ctx.fillStyle=i===0||i===6?'#FCEAEA':'#F5F4F0';
+    ctx.fillRect(cx, y, CELL_W, 28);
+    ctx.fillStyle=i===0||i===6?'#E74C3C':'#888';
+    ctx.font='bold 12px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(wkLabels[i], cx+CELL_W/2, y+18);
+  }
+  ctx.textAlign='left';
+
+  // 日期格子
+  let col=firstWeekDay, row=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const cx=calX+col*CELL_W;
+    const cy=y+28+row*CELL_H;
+    const ds=year+'-'+monthStr+'-'+String(d).padStart(2,'0');
+    const isToday=ds===t;
+    const dow=(firstWeekDay+d-1)%7;
+    const isWk=dow===0||dow===6;
+    const dayBks=monthBks.filter(b=>b.ci<=ds&&b.co>ds);
+
+    // 格子底色
+    ctx.fillStyle=isToday?'#FFF3EC':isWk?'#FAFAFA':'#fff';
+    ctx.fillRect(cx,cy,CELL_W,CELL_H);
+    ctx.strokeStyle='#E8E6E0';
+    ctx.lineWidth=0.5;
+    ctx.strokeRect(cx,cy,CELL_W,CELL_H);
+
+    // 日期數字
+    if(isToday){
+      ctx.fillStyle=ORANGE;
+      ctx.beginPath();ctx.arc(cx+14,cy+14,11,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#fff';
+    } else {
+      ctx.fillStyle=isWk?'#E74C3C':'#2C2C2A';
+    }
+    ctx.font='bold 13px sans-serif';
+    ctx.fillText(String(d), cx+8, cy+18);
+
+    // 訂房條
+    let bkY=cy+26;
+    dayBks.slice(0,2).forEach(b=>{
+      const rc=getRoomColor(b.rid);
+      const barColor=b.st==='checkedout'?'#95A5A6':rc;
+      const isStart=b.ci===ds;
+      ctx.fillStyle=barColor+'33';
+      ctx.fillRect(cx+1,bkY,CELL_W-2,16);
+      if(isStart){
+        ctx.fillStyle=barColor;
+        ctx.fillRect(cx+1,bkY,3,16);
+        ctx.fillStyle=barColor;
+        ctx.font=(b.st==='checkedin'?'bold ':'')+'9px sans-serif';
+        ctx.fillText((b.st==='checkedin'?'★':'')+' '+(b.rnm||'').slice(0,4),cx+6,bkY+11);
+      }
+      bkY+=18;
+    });
+    if(dayBks.length>2){
+      ctx.fillStyle='#aaa';
+      ctx.font='9px sans-serif';
+      ctx.fillText('+'+(dayBks.length-2), cx+CELL_W-18, bkY-4);
+    }
+
+    col++;
+    if(col===7){col=0;row++;}
+  }
+  y+=CAL_H+16;
+
+  // ── 清單標題列 ──
+  ctx.fillStyle='#2C2C2A';
+  ctx.fillRect(PAD, y, W-PAD*2, SEC_H);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 14px sans-serif';
+  ctx.fillText('📋 本月入住清單', PAD+14, y+22);
+  y+=SEC_H;
+
+  // 清單表頭
+  ctx.fillStyle='#F0EFE9';
+  ctx.fillRect(PAD, y, W-PAD*2, LIST_ROW_H);
+  let lx=PAD+8;
+  LIST_LABELS.forEach((lbl,i)=>{
+    ctx.fillStyle='#888';
+    ctx.font='bold 11px sans-serif';
+    ctx.fillText(lbl, lx, y+23);
+    lx+=LIST_COLS[i];
+  });
+  y+=LIST_ROW_H;
+
+  // 清單資料
+  if(!listBks.length){
+    ctx.fillStyle='#fff';
+    ctx.fillRect(PAD,y,W-PAD*2,LIST_ROW_H);
+    ctx.fillStyle='#bbb';
+    ctx.font='13px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('本月無入住記錄', W/2, y+24);
+    ctx.textAlign='left';
+    y+=LIST_ROW_H;
+  } else {
+    listBks.forEach((b,ri)=>{
+      const r=rooms.find(x=>x.id===b.rid);
+      const rc=getRoomColor(b.rid);
+      ctx.fillStyle=ri%2===0?'#fff':'#FAFAF8';
+      ctx.fillRect(PAD,y,W-PAD*2,LIST_ROW_H);
+      ctx.strokeStyle='#EDECE8';
+      ctx.lineWidth=0.3;
+      ctx.beginPath();ctx.moveTo(PAD,y+LIST_ROW_H);ctx.lineTo(W-PAD,y+LIST_ROW_H);ctx.stroke();
+      // 房間色條
+      ctx.fillStyle=rc;
+      ctx.fillRect(PAD,y,3,LIST_ROW_H);
+      const stmap={confirmed:'已確認',checkedin:'★已入住',checkedout:'已退房',cancelled:'已取消'};
+      const stcolor={confirmed:'#185FA5',checkedin:ORANGE,checkedout:'#95A5A6',cancelled:'#E74C3C'};
+      const vals=[r?r.name:'—', b.nm||'—', b.ci.slice(5), b.co.slice(5), stmap[b.st]||b.st, (b.g||'—')+'人', '$'+(b.amt||0)];
+      lx=PAD+8;
+      vals.forEach((v,i)=>{
+        if(i===4){
+          ctx.fillStyle=stcolor[b.st]||'#888';
+          ctx.font='bold 12px sans-serif';
+        } else if(i===0){
+          ctx.fillStyle=rc;
+          ctx.font='bold 12px sans-serif';
+        } else {
+          ctx.fillStyle='#2C2C2A';
+          ctx.font='12px sans-serif';
+        }
+        ctx.fillText(v, lx, y+24);
+        lx+=LIST_COLS[i];
+      });
+      y+=LIST_ROW_H;
+    });
+  }
+
+  // ── 底部 ──
+  ctx.fillStyle='#E8E6E0';
+  ctx.fillRect(0,y,W,FOOT_H);
+  ctx.fillStyle='#AAA';
+  ctx.font='11px sans-serif';
+  ctx.fillText('橋見幸福民宿內部系統自動產生', PAD, y+20);
+
+  // ── 下載 ──
+  const link=document.createElement('a');
+  const ds2=String(year)+(month+1<10?'0':'')+(month+1);
+  link.download='橋見幸福訂房一覽_'+ds2+'.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+  showToast('✅ 訂房一覽圖片已下載');
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
 }
 
 // ══════════════════════════════════════════
