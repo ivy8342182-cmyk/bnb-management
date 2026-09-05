@@ -321,7 +321,7 @@ body.sb-open #sb-overlay{display:block;}
     <div class="section" id="s-rooms">
       <div class="sh-hdr">
         <div class="sh-ttl">房間狀態</div>
-        <button class="btn btn-p" onclick="openM('m-add-room')">＋ 新增房間</button>
+        <button class="btn btn-p" onclick="openM('m-add-room');setTimeout(()=>renderColorPicker('rn-color-picker','rn-color',ROOM_COLORS[0]),50)">＋ 新增房間</button>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <span class="badge b-ok">● 空房</span>
@@ -518,6 +518,7 @@ body.sb-open #sb-overlay{display:block;}
     <div class="g2"><div class="fg"><label>房型</label><select id="rn-type"><option>雙人套房</option><option>雙人房</option><option>家庭房</option><option>單人房</option><option>閣樓房</option><option>景觀房</option></select></div>
     <div class="fg"><label>最大人數</label><input type="number" id="rn-cap" value="2" min="1" max="10"></div></div>
     <div class="fg"><label>狀態</label><select id="rn-st"><option value="available">空房</option><option value="occupied">入住中</option><option value="reserved">已預訂</option><option value="cleaning">清潔中</option><option value="maintenance">維修中</option></select></div>
+    <div class="fg"><label>代表色</label><div id="rn-color-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div><input type="hidden" id="rn-color" value="#F26522"></div>
     <div class="fg"><label>備註</label><textarea id="rn-note" rows="2"></textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-o" onclick="closeM('m-add-room')">取消</button><button class="btn btn-p" onclick="addRoom()">新增</button></div>
   </div>
@@ -669,7 +670,7 @@ const db = firebase.firestore();
 // ══════════════════════════════════════════
 // 資料層：本機快取 + Firestore 同步
 // ══════════════════════════════════════════
-const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory'};
+const K = {rooms:'rooms', bk:'bookings', fin:'finance', cl:'cleaning', guests:'guests', inv:'inventory', staff:'staff'};
 const DB = {rooms:null, bookings:null, finance:null, cleaning:null, guests:null, inventory:null, staff:null};
 
 // 讀取本機快取
@@ -905,8 +906,8 @@ function showSyncConflictModal(mismatches, mismatchNames, errMsg) {
 // 預設資料（首次使用時寫入 Firestore）
 // ══════════════════════════════════════════
 const uid = pre => pre + Date.now() + Math.random().toString(36).slice(2,5);
-const today = () => new Date().toISOString().split('T')[0];
-const addD = (s,n) => { const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.toISOString().split('T')[0] };
+const today = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const addD = (s,n) => { const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 
 function getDefaultData(k) {
   const t=today(), yd=addD(t,-1), t1=addD(t,1), t2=addD(t,2), t3=addD(t,3);
@@ -1183,24 +1184,26 @@ function renderRooms(){
     const bk=bks.find(b=>b.rid===r.id&&(b.st==='checkedin'||(b.st==='confirmed'&&b.ci<=t&&b.co>t)));
     let info=`${r.type} · 最多${r.cap}人<br>每晚 ${fmtM(r.price)}`;
     if(bk)info+=`<br><span style="color:var(--amber);">👤 ${bk.nm} · 退: ${fmtD(bk.co)}</span>`;
-    return`<div class="room-card ${r.status}" onclick="openRD(${r.id})"><div class="room-card-top"></div><div class="room-card-body"><div class="r-num">No.${r.num}</div><div class="r-name">${r.name}</div><div style="margin:7px 0;"><span class="badge ${SBDG[r.status]}">${SLBL[r.status]}</span></div><div class="r-info">${info}</div>${r.note?`<div class="r-note" style="background:var(--bg);border-left:2px solid var(--orange);border-radius:6px;padding:6px 10px;margin-top:8px;font-size:11px;color:var(--txt3);">📝 ${r.note}</div>`:''}</div></div>`;
+    const rc=getRoomColor(r.id);
+    return`<div class="room-card ${r.status}" onclick="openRD(${r.id})" style="border-top:3px solid ${rc};"><div class="room-card-top" style="background:${rc};"></div><div class="room-card-body"><div class="r-num">No.${r.num}</div><div class="r-name">${r.name}</div><div style="margin:7px 0;"><span class="badge ${SBDG[r.status]}">${SLBL[r.status]}</span></div><div class="r-info">${info}</div>${r.note?`<div class="r-note" style="background:var(--bg);border-left:2px solid var(--orange);border-radius:6px;padding:6px 10px;margin-top:8px;font-size:11px;color:var(--txt3);">📝 ${r.note}</div>`:''}</div></div>`;
   }).join('');
 }
 function openRD(id){
   const r=(ld(K.rooms)).find(x=>x.id===id);if(!r)return;
   editRID=id;$('rd-title').textContent=r.name;
-  $('rd-content').innerHTML=`<div class="g2"><div class="fg"><label>名稱</label><input id="rd-nm" value="${r.name}"></div><div class="fg"><label>編號</label><input id="rd-num" value="${r.num}"></div></div><div class="g2"><div class="fg"><label>房型</label><select id="rd-tp">${['雙人套房','雙人房','家庭房','單人房','閣樓房','景觀房'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label>人數</label><input type="number" id="rd-cap" value="${r.cap}"></div></div><div class="g2"><div class="fg"><label>定價（元）</label><input type="number" id="rd-pr" value="${r.price}"></div><div class="fg"><label>狀態</label><select id="rd-st">${Object.entries(SLBL).map(([k,v])=>`<option value="${k}"${r.status===k?' selected':''}>${v}</option>`).join('')}</select></div></div><div class="fg"><label>備註</label><textarea id="rd-nt" rows="2">${r.note||''}</textarea></div>`;
+  $('rd-content').innerHTML=`<div class="g2"><div class="fg"><label>名稱</label><input id="rd-nm" value="${r.name}"></div><div class="fg"><label>編號</label><input id="rd-num" value="${r.num}"></div></div><div class="g2"><div class="fg"><label>房型</label><select id="rd-tp">${['雙人套房','雙人房','家庭房','單人房','閣樓房','景觀房'].map(t=>`<option${r.type===t?' selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label>人數</label><input type="number" id="rd-cap" value="${r.cap}"></div></div><div class="g2"><div class="fg"><label>定價（元）</label><input type="number" id="rd-pr" value="${r.price}"></div><div class="fg"><label>狀態</label><select id="rd-st">${Object.entries(SLBL).map(([k,v])=>`<option value="${k}"${r.status===k?' selected':''}>${v}</option>`).join('')}</select></div></div><div class="fg"><label>代表色</label><div id="rd-color-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div><input type="hidden" id="rd-color" value="${r.color||ROOM_COLORS[0]}"></div><div class="fg"><label>備註</label><textarea id="rd-nt" rows="2">${r.note||''}</textarea></div>`;
+  setTimeout(()=>renderColorPicker('rd-color-picker','rd-color',r.color||getRoomColor(r.id)),0);
   openM('m-room-detail');
 }
 function saveRD(){
   const rooms=ld(K.rooms),i=rooms.findIndex(r=>r.id===editRID);if(i<0)return;
-  rooms[i]={...rooms[i],name:$v('rd-nm'),num:$v('rd-num'),type:$v('rd-tp'),cap:+$v('rd-cap'),price:+$v('rd-pr'),status:$v('rd-st'),note:$v('rd-nt')};
+  rooms[i]={...rooms[i],name:$v('rd-nm'),num:$v('rd-num'),type:$v('rd-tp'),cap:+$v('rd-cap'),price:+$v('rd-pr'),status:$v('rd-st'),note:$v('rd-nt'),color:$v('rd-color')||rooms[i].color||ROOM_COLORS[i%ROOM_COLORS.length]};
   sv(K.rooms,rooms);closeM('m-room-detail');
 }
 function addRoom(){
   const nm=$v('rn-name').trim(),num=$v('rn-num').trim();if(!nm||!num)return alert('請填寫名稱和編號');
   const rooms=ld(K.rooms);
-  rooms.push({id:Date.now(),name:nm,num,type:$v('rn-type'),cap:+$v('rn-cap')||2,price:+$v('rn-price')||0,status:$v('rn-st'),note:$v('rn-note')});
+  rooms.push({id:Date.now(),name:nm,num,type:$v('rn-type'),cap:+$v('rn-cap')||2,price:+$v('rn-price')||0,status:$v('rn-st'),note:$v('rn-note'),color:$v('rn-color')||ROOM_COLORS[rooms.length%ROOM_COLORS.length]});
   sv(K.rooms,rooms);closeM('m-add-room');['rn-name','rn-num','rn-price','rn-note'].forEach(x=>$(x).value='');
 }
 
@@ -1853,9 +1856,51 @@ function updateMobCalTitle(){
   }
 }
 
+// 房間顏色池（固定配色，依房間 ID 分配）
+const ROOM_COLORS=[
+  // 暖色系
+  '#E74C3C', // 紅
+  '#F26522', // 橘
+  '#F1C40F', // 黃
+  '#E91E8C', // 桃紅
+  '#FF8C00', // 深橘
+  // 冷色系
+  '#2ECC71', // 綠
+  '#1ABC9C', // 青綠
+  '#3498DB', // 藍
+  '#5B6CF9', // 靛藍
+  '#9B59B6', // 紫
+];
+function getRoomColor(rid){
+  const rooms=ld(K.rooms);
+  const r=rooms.find(x=>x.id===rid);
+  if(!r) return ROOM_COLORS[0];
+  if(r.color) return r.color;
+  const idx=rooms.indexOf(r);
+  return ROOM_COLORS[idx % ROOM_COLORS.length];
+}
+function renderColorPicker(containerId, inputId, selected){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  const cur=selected||ROOM_COLORS[0];
+  const warm=ROOM_COLORS.slice(0,5);
+  const cool=ROOM_COLORS.slice(5);
+  const dot=(c)=>`<div data-c="${c}" onclick="pickColor('${containerId}','${inputId}','${c}')" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;outline:${c===cur?'3px solid #333':'3px solid transparent'};outline-offset:2px;flex-shrink:0;transition:outline .15s;"></div>`;
+  el.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:4px;">${warm.map(dot).join('')}</div><div style="display:flex;gap:6px;">${cool.map(dot).join('')}</div>`;
+  const hidden=document.getElementById(inputId);
+  if(hidden)hidden.value=cur;
+}
+function pickColor(containerId, inputId, color){
+  document.querySelectorAll('#'+containerId+' div').forEach(d=>{
+    d.style.outline=d.getAttribute('data-c')===color?'3px solid #333':'3px solid transparent';
+  });
+  const hidden=document.getElementById(inputId);
+  if(hidden)hidden.value=color;
+}
+
 function renderMobMonth(){
   const bks=ld(K.bk).filter(b=>b.st!=='cancelled');
-  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
+  const rooms=ld(K.rooms);
   const t=today();
   const firstDay=new Date(mobCalYear,mobCalMonth,1).getDay();
   const daysInMonth=new Date(mobCalYear,mobCalMonth+1,0).getDate();
@@ -1876,8 +1921,12 @@ function renderMobMonth(){
     const isWk=dow===0||dow===6;
     const numColor=isWk?'#E74C3C':'var(--txt)';
     const dotHtml=dayBks.slice(0,4).map(b=>{
-      const c=STATUS_COLOR[b.st]||'#999';
-      return`<div class="mob-cal-dot" style="background:${c};"></div>`;
+      const c=b.st==='checkedout'?'#95A5A6':getRoomColor(b.rid);
+      const isCi=b.st==='checkedin';
+      return`<div style="position:relative;width:7px;height:7px;flex-shrink:0;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${c};"></div>
+        ${isCi?`<span style="position:absolute;top:-6px;right:-4px;font-size:7px;color:${c};font-weight:900;line-height:1;">★</span>`:''}
+      </div>`;
     }).join('');
     html+=`<td onclick="mobCalClickDay('${ds}')" style="${isToday?'background:#FFF3EC;':''}">
       <div class="${isToday?'mob-cal-today':''}" style="text-align:center;">
@@ -1891,13 +1940,18 @@ function renderMobMonth(){
   const remaining=(7-col%7)%7;
   for(let i=0;i<remaining;i++) html+='<td style="background:var(--bg);"></td>';
   html+='</tr></tbody></table>';
-  // 圖例
-  html+=`<div style="display:flex;gap:12px;padding:10px 4px;font-size:11px;color:var(--txt3);">
-    <span style="display:flex;align-items:center;gap:4px;"><span class="mob-cal-dot" style="background:#3498DB;display:inline-block;"></span>已確認</span>
-    <span style="display:flex;align-items:center;gap:4px;"><span class="mob-cal-dot" style="background:#F26522;display:inline-block;"></span>入住中</span>
-    <span style="display:flex;align-items:center;gap:4px;"><span class="mob-cal-dot" style="background:#95A5A6;display:inline-block;"></span>已退房</span>
-    <span style="color:var(--txt3);">點日期看詳情</span>
-  </div>`;
+  // 房間圖例
+  const usedRooms=rooms.filter(r=>bks.some(b=>b.rid===r.id));
+  if(usedRooms.length){
+    html+=`<div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 4px;font-size:11px;">`;
+    usedRooms.forEach(r=>{
+      const c=getRoomColor(r.id);
+      html+=`<span style="display:flex;align-items:center;gap:4px;color:var(--txt3);">
+        <span class="mob-cal-dot" style="background:${c};display:inline-block;"></span>${r.name}
+      </span>`;
+    });
+    html+=`<span style="color:var(--txt3);margin-left:auto;">★ 已入住 &nbsp;·&nbsp; 點日期看詳情</span></div>`;
+  }
   const el=document.getElementById('mob-cal-month-wrap');
   if(el)el.innerHTML=html;
 }
@@ -1937,9 +1991,11 @@ function renderMobWeek(){
       </div>
       ${dayBks.length?`<div class="cal-day-bks">${dayBks.map(b=>{
         const r=rooms.find(x=>x.id===b.rid);
-        const sc=STATUS_COLOR[b.st]||'#999',sbg=STATUS_BG[b.st]||'#f5f5f5';
+        const sc=getRoomColor(b.rid);
+        const opacity=b.st==='checkedout'?'0.5':'1';
+        const sbg=sc+'22';
         const isCI=b.ci===ds,isCO=addD(b.co,-1)===ds;
-        return`<div class="cal-day-bk" style="background:${sbg};border-left:3px solid ${sc};">
+        return`<div class="cal-day-bk" style="background:${sbg};border-left:3px solid ${sc};opacity:${opacity};">
           <div class="cal-day-bk-room" style="color:${sc};">${r?r.name:'—'}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:13px;">${b.nm||'—'}</div>
@@ -1968,7 +2024,6 @@ function renderCal(){
   const rooms=ld(K.rooms),bks=ld(K.bk).filter(b=>b.st!=='cancelled');
   const t=today();
   document.getElementById('cal-title').textContent=calYear+'年 '+(calMonth+1)+'月';
-  const STATUS_COLOR={confirmed:'#3498DB',checkedin:'#F26522',checkedout:'#95A5A6'};
   const hint=document.getElementById('cal-hint');
   if(hint && window.innerWidth<768) hint.style.display='block';
   let html='<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:'+(90+daysInMonth*32)+'px;">';
@@ -1985,25 +2040,33 @@ function renderCal(){
   }
   html+='</tr></thead><tbody>';
   rooms.forEach(r=>{
-    html+='<tr><td style="padding:6px 8px;font-size:12px;font-weight:600;color:var(--txt2);background:var(--bg);border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r.name+'</td>';
+    const rc=getRoomColor(r.id);
+    const rcLight=rc+'22';
+    html+='<tr><td style="padding:6px 8px;font-size:12px;font-weight:600;color:'+rc+';background:var(--bg);border-right:1px solid var(--border);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid '+rc+';">'+r.name+'</td>';
     for(let i=1;i<=daysInMonth;i++){
       const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
       const bk=bks.find(b=>b.rid===r.id&&b.ci<=ds&&b.co>ds);
       const isStart=bk&&bk.ci===ds;
-      const color=bk?STATUS_COLOR[bk.st]||'#95A5A6':null;
-      const bg=bk?color+'22':'transparent';
-      const bl=isStart?'border-left:2px solid '+color+';':'';
-      html+='<td style="padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:'+bg+';'+bl+'height:40px;" title="'+(bk?bk.nm+' ('+bk.ci+'→'+bk.co+')':'')+'">'+
-        (isStart&&bk?'<div style="font-size:9px;color:'+color+';font-weight:600;padding:2px 3px;overflow:hidden;white-space:nowrap;">'+bk.nm+'</div>':'')+'</td>';
+      const isCheckedout=bk&&bk.st==='checkedout';
+      const isCheckedin=bk&&bk.st==='checkedin';
+      const cellColor=isCheckedout?'#95A5A6':rc;
+      const cellBg=isCheckedout?'#F4F6F722':bk?rcLight:'transparent';
+      const bl=isStart?'border-left:2px solid '+cellColor+';':'';
+      const starMark=isCheckedin&&isStart?'★ ':'';
+      html+='<td style="padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:'+cellBg+';'+bl+'height:40px;" title="'+(bk?bk.nm+' ('+bk.ci+'→'+bk.co+')':'')+'">'+
+        (isStart&&bk?'<div style="font-size:9px;color:'+cellColor+';font-weight:600;padding:2px 3px;overflow:hidden;white-space:nowrap;">'+starMark+bk.nm+'</div>':'')+'</td>';
     }
     html+='</tr>';
   });
   html+='</tbody></table>';
-  html+='<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:16px;font-size:12px;color:var(--txt3);">'+
-    '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#3498DB22;border-left:2px solid #3498DB;"></span>已確認</span>'+
-    '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#F2652222;border-left:2px solid #F26522;"></span>入住中</span>'+
-    '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#95A5A622;border-left:2px solid #95A5A6;"></span>已退房</span>'+
-    '</div>';
+  // 房間圖例
+  html+='<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--txt3);">';
+  rooms.forEach(r=>{
+    const rc=getRoomColor(r.id);
+    html+=`<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:${rc}22;border-left:2px solid ${rc};display:inline-block;"></span>${r.name}</span>`;
+  });
+  html+='<span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;">★ 已入住&nbsp;&nbsp;灰色 = 已退房</span>';
+  html+='</div>';
   document.getElementById('cal-grid').innerHTML=html;
   renderCalMobile();
 }
