@@ -210,6 +210,8 @@ body.mobile-mode .cal-nav-mobile{display:flex !important;}
 body.mobile-mode #bk-list-wrap .card{display:none;}
 body.mobile-mode #hist-table-wrap{display:none;}
 body.mobile-mode .bk-card-list{display:flex;}
+body.mobile-mode .bk-hdr-btn{font-size:12px !important;padding:6px 10px !important;white-space:nowrap;}
+@media(max-width:768px){.bk-hdr-btn{font-size:12px !important;padding:6px 10px !important;white-space:nowrap;}}
 body.mobile-mode .hdr-sync-wrap{display:none !important;}
 body.mobile-mode .hdr-date-wrap{display:none !important;}
 
@@ -338,7 +340,11 @@ body.sb-open #sb-overlay{display:block;}
     <div class="section" id="s-bookings">
       <div class="sh-hdr">
         <div class="sh-ttl">訂房管理</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-o" id="bk-view-btn" onclick="toggleBKView()">📅 月曆視圖</button><button class="btn btn-o" onclick="exportBKImage()">📸 匯出圖片</button><button class="btn btn-p" onclick="openM('m-add-bk')">＋ 新增訂房</button></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
+          <button class="btn btn-o bk-hdr-btn" id="bk-view-btn" onclick="toggleBKView()">📅 月曆視圖</button>
+          <button class="btn btn-o bk-hdr-btn" onclick="exportBKImage()">📸 匯出圖片</button>
+          <button class="btn btn-p bk-hdr-btn" onclick="openM('m-add-bk')">＋ 新增訂房</button>
+        </div>
       </div>
       <div id="bk-filters" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
         <button class="btn btn-o btn-sm bk-f active" onclick="filterBK('active',this)">進行中</button>
@@ -1447,13 +1453,25 @@ function _drawBKExport(year, month){
   ctx.font='11px sans-serif';
   ctx.fillText('橋見幸福民宿內部系統自動產生', PAD, y+20);
 
-  // ── 下載 ──
-  const link=document.createElement('a');
+  // ── 下載 / 顯示 ──
   const ds2=String(year)+(month+1<10?'0':'')+(month+1);
-  link.download='橋見幸福訂房一覽_'+ds2+'.png';
-  link.href=canvas.toDataURL('image/png');
-  link.click();
-  showToast('✅ 訂房一覽圖片已下載');
+  const dataURL=canvas.toDataURL('image/png');
+  const isMobile=document.body.classList.contains('mobile-mode')||window.innerWidth<=768;
+  if(isMobile){
+    // 手機：開新分頁顯示，長按圖片即可儲存
+    const win=window.open('','_blank');
+    if(win){
+      win.document.write('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>訂房一覽</title><style>body{margin:0;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;padding:16px;}img{max-width:100%;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);}p{font-size:13px;color:#888;margin-top:12px;text-align:center;}</style></head><body><img src="'+dataURL+'"><p>📱 長按圖片 → 儲存到相簿，或截圖後分享</p></body></html>');
+      win.document.close();
+    }
+    showToast('✅ 圖片已在新分頁開啟，長按儲存');
+  } else {
+    const link=document.createElement('a');
+    link.download='橋見幸福訂房一覽_'+ds2+'.png';
+    link.href=dataURL;
+    link.click();
+    showToast('✅ 訂房一覽圖片已下載');
+  }
 }
 
 function roundRect(ctx,x,y,w,h,r){
