@@ -1506,14 +1506,14 @@ function _drawBKExport(year, month){
         <title>訂房一覽</title>
         <style>
           *{box-sizing:border-box;margin:0;padding:0;}
-          body{background:#f5f5f5;font-family:sans-serif;padding-bottom:100px;}
+          body{background:#f5f5f5;font-family:sans-serif;padding-bottom:120px;}
           .top-bar{position:fixed;top:0;left:0;right:0;height:52px;background:#F26522;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
-          .back-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+          .back-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;}
           .title{color:#fff;font-size:15px;font-weight:600;}
           .content{padding:68px 16px 16px;}
           img{max-width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:block;}
-          .hint{font-size:13px;color:#888;margin-top:14px;text-align:center;line-height:1.6;padding:12px;background:#fff;border-radius:8px;}
-          .save-btn{display:block;margin:14px auto 0;padding:13px 0;width:100%;max-width:400px;background:#F26522;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;text-align:center;}
+          .hint{font-size:13px;color:#888;margin-top:14px;text-align:center;line-height:1.8;padding:12px;background:#fff;border-radius:8px;}
+          .save-btn{display:block;margin:14px auto 0;padding:14px 0;width:100%;max-width:400px;background:#F26522;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}
         </style>
       </head><body>
         <div class="top-bar">
@@ -1521,12 +1521,36 @@ function _drawBKExport(year, month){
           <span class="title">訂房一覽圖片</span>
         </div>
         <div class="content">
-          <img src="${dataURL}">
-          <div class="hint">📱 長按圖片 → 儲存到相簿<br>或點下方按鈕下載</div>
-          <a href="${dataURL}" download="橋見幸福訂房一覽.png" style="text-decoration:none;">
-            <button class="save-btn">⬇ 儲存圖片</button>
-          </a>
+          <img id="preview-img" src="${dataURL}">
+          <div class="hint" id="hint-text">📱 長按上方圖片 → 儲存到相簿</div>
+          <button class="save-btn" id="save-btn" onclick="saveImg()">⬇ 儲存 / 分享圖片</button>
         </div>
+        <script>
+          const DATA_URL='${dataURL}';
+          async function saveImg(){
+            const btn=document.getElementById('save-btn');
+            const hint=document.getElementById('hint-text');
+            try{
+              // 轉成 Blob
+              const res=await fetch(DATA_URL);
+              const blob=await res.blob();
+              const file=new File([blob],'橋見幸福訂房一覽.png',{type:'image/png'});
+              // 優先用 Web Share API（iOS / Android 皆支援）
+              if(navigator.canShare&&navigator.canShare({files:[file]})){
+                await navigator.share({files:[file],title:'橋見幸福訂房一覽'});
+                return;
+              }
+            }catch(e){
+              if(e.name==='AbortError') return; // 使用者取消
+            }
+            // Fallback：下載連結
+            const a=document.createElement('a');
+            a.href=DATA_URL;
+            a.download='橋見幸福訂房一覽.png';
+            a.click();
+            hint.textContent='⬇ 若未自動儲存，請長按上方圖片儲存到相簿';
+          }
+        </script>
       </body></html>`);
       win.document.close();
     }
