@@ -1501,58 +1501,55 @@ function _drawBKExport(year, month){
     // 手機：開新分頁顯示，長按圖片即可儲存
     const win=window.open('','_blank');
     if(win){
-      win.document.write(`<html><head>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>訂房一覽</title>
-        <style>
-          *{box-sizing:border-box;margin:0;padding:0;}
-          body{background:#f5f5f5;font-family:sans-serif;padding-bottom:120px;}
-          .top-bar{position:fixed;top:0;left:0;right:0;height:52px;background:#F26522;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
-          .back-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;}
-          .title{color:#fff;font-size:15px;font-weight:600;}
-          .content{padding:68px 16px 16px;}
-          img{max-width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:block;}
-          .hint{font-size:13px;color:#888;margin-top:14px;text-align:center;line-height:1.8;padding:12px;background:#fff;border-radius:8px;}
-          .save-btn{display:block;margin:14px auto 0;padding:14px 0;width:100%;max-width:400px;background:#F26522;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}
-        </style>
-      </head><body>
-        <div class="top-bar">
-          <button class="back-btn" onclick="window.close()">← 返回系統</button>
-          <span class="title">訂房一覽圖片</span>
-        </div>
-        <div class="content">
-          <img id="preview-img" src="${dataURL}">
-          <div class="hint" id="hint-text">📱 長按上方圖片 → 儲存到相簿</div>
-          <button class="save-btn" id="save-btn" onclick="saveImg()">⬇ 儲存 / 分享圖片</button>
-        </div>
-        <script>
-          const DATA_URL='${dataURL}';
-          async function saveImg(){
-            const btn=document.getElementById('save-btn');
-            const hint=document.getElementById('hint-text');
-            try{
-              // 轉成 Blob
-              const res=await fetch(DATA_URL);
-              const blob=await res.blob();
-              const file=new File([blob],'橋見幸福訂房一覽.png',{type:'image/png'});
-              // 優先用 Web Share API（iOS / Android 皆支援）
-              if(navigator.canShare&&navigator.canShare({files:[file]})){
-                await navigator.share({files:[file],title:'橋見幸福訂房一覽'});
-                return;
-              }
-            }catch(e){
-              if(e.name==='AbortError') return; // 使用者取消
-            }
-            // Fallback：下載連結
-            const a=document.createElement('a');
-            a.href=DATA_URL;
-            a.download='橋見幸福訂房一覽.png';
-            a.click();
-            hint.textContent='⬇ 若未自動儲存，請長按上方圖片儲存到相簿';
-          }
-        </script>
-      </body></html>`);
+      // 用 Blob URL 開新視窗，避免 document.write 破壞外層 HTML 解析
+      const blob=new Blob([dataURL],{type:'text/plain'});
+      win._imgData=dataURL;
+      win.document.open();
       win.document.close();
+      win._imgData=dataURL;
+      // 用 srcdoc 注入，完全隔離
+      const iframe=win.document.createElement('iframe');
+      iframe.style.cssText='width:100%;height:100%;border:none;';
+      const htmlContent=[
+        'DATA:text/html,',
+        '%3C!DOCTYPE html%3E%3Chtml%3E%3Chead%3E',
+        '%3Cmeta name=viewport content=width%3Ddevice-width%2Cinitial-scale%3D1%3E',
+        '%3Ctitle%3E%E8%A8%82%E6%88%BF%E4%B8%80%E8%A6%BD%3C/title%3E',
+      ].join('');
+      // 直接操作 win 的 DOM
+      win.document.documentElement.style.cssText='margin:0;padding:0;height:100%;';
+      win.document.body.style.cssText='margin:0;background:#f5f5f5;font-family:sans-serif;padding-bottom:120px;';
+      win.document.head.innerHTML='<meta name="viewport" content="width=device-width,initial-scale=1"><title>訂房一覽</title><style>*{box-sizing:border-box;margin:0;padding:0;}.top-bar{position:fixed;top:0;left:0;right:0;height:52px;background:#F26522;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}.back-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;}.title{color:#fff;font-size:15px;font-weight:600;}.content{padding:68px 16px 16px;}img{max-width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:block;}.hint{font-size:13px;color:#888;margin-top:14px;text-align:center;line-height:1.8;padding:12px;background:#fff;border-radius:8px;}.save-btn{display:block;margin:14px auto 0;padding:14px 0;width:100%;max-width:400px;background:#F26522;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}</style>';
+      const bar=win.document.createElement('div');
+      bar.className='top-bar';
+      bar.innerHTML='<button class="back-btn" onclick="window.close()">← 返回系統</button><span class="title">訂房一覽圖片</span>';
+      win.document.body.appendChild(bar);
+      const cont=win.document.createElement('div');
+      cont.className='content';
+      const img=win.document.createElement('img');
+      img.src=dataURL;
+      const hint=win.document.createElement('div');
+      hint.className='hint';
+      hint.textContent='📱 長按上方圖片 → 儲存到相簿';
+      const btn=win.document.createElement('button');
+      btn.className='save-btn';
+      btn.textContent='⬇ 儲存 / 分享圖片';
+      btn.onclick=async function(){
+        try{
+          const res=await fetch(dataURL);
+          const bl=await res.blob();
+          const file=new File([bl],'橋見幸福訂房一覽.png',{type:'image/png'});
+          if(navigator.canShare&&navigator.canShare({files:[file]})){
+            await navigator.share({files:[file],title:'橋見幸福訂房一覽'});
+            return;
+          }
+        }catch(e){if(e.name==='AbortError')return;}
+        const a=document.createElement('a');
+        a.href=dataURL;a.download='橋見幸福訂房一覽.png';a.click();
+        hint.textContent='若未自動儲存，請長按上方圖片儲存到相簿';
+      };
+      cont.appendChild(img);cont.appendChild(hint);cont.appendChild(btn);
+      win.document.body.appendChild(cont);
     }
     showToast('✅ 圖片已在新分頁開啟，長按儲存');
   } else {
