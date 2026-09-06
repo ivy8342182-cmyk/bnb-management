@@ -72,18 +72,18 @@
 .num-font{font-family:'Noto Sans TC',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh;font-size:14px}
-#sidebar{width:220px;min-height:100vh;background:var(--white);color:var(--txt);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s,width .3s;border-right:1px solid var(--border);box-shadow:2px 0 16px rgba(0,0,0,.04)}
+#sidebar{width:220px;min-height:100vh;background:var(--white);color:var(--txt);display:flex;flex-direction:column;position:fixed;left:0;top:46px;bottom:0;z-index:100;transition:transform .3s,width .3s;border-right:1px solid var(--border);box-shadow:2px 0 16px rgba(0,0,0,.04)}
 /* 電腦版 sidebar 收合 */
 /* sidebar 收合狀態 */
 body.sb-collapsed #sidebar{transform:translateX(-220px);}
+#sb-toggle-btn:hover{background:var(--bg);color:var(--txt);}
+body.sb-collapsed #sb-toggle-btn{width:220px;}
+
 body.sb-collapsed #main{margin-left:0 !important;}
 
-body.sb-collapsed #sb-float-btn{display:flex !important;}
-body.sb-collapsed #pg-title{padding-left:56px !important;}
-body.mobile-mode #sb-float-btn{display:flex !important;}
-body.mobile-mode.sb-open #sb-float-btn{display:none !important;}
-body.mobile-mode #pg-title{padding-left:56px !important;}
-@media(max-width:768px){ #sb-float-btn{display:flex !important;} .sb-open #sb-float-btn{display:none !important;} #pg-title{padding-left:56px !important;} }
+/* sb-float-btn 已整合為固定 sb-toggle-btn */
+body.sb-collapsed .pg-header{padding-left:228px;}
+@media(max-width:768px){ #pg-title{padding-left:8px !important;} }
 .sb-logo{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
 .sb-logo h1{font-size:15px;font-weight:700;color:var(--txt);line-height:1.4;display:flex;align-items:center;gap:8px}
 .sb-logo p{font-size:11px;color:var(--txt3);margin-top:2px}
@@ -171,6 +171,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 body.mobile-mode #sidebar{transform:translateX(-100%);}
 body.mobile-mode #sidebar.open{transform:translateX(0);}
 body.mobile-mode #main{margin-left:0;}
+body.mobile-mode #sb-toggle-btn{width:52px;}
+body.mobile-mode #sb-toggle-btn{width:auto;}
+body.mobile-mode.sb-open #sb-toggle-btn{width:220px;}
+body.mobile-mode.sb-open #sb-toggle-label{display:inline;}
 
 
 body.mobile-mode .pg-content{padding:14px}
@@ -184,6 +188,7 @@ body.mobile-mode .today-banner{flex-direction:column;gap:10px}
 /* 電腦版強制覆蓋媒體查詢（手機切電腦用）*/
 body.desktop-mode:not(.sb-collapsed) #sidebar{transform:translateX(0) !important;}
 body.desktop-mode.sb-collapsed #sidebar{transform:translateX(-220px) !important;}
+
 body.desktop-mode:not(.sb-collapsed) #main{margin-left:220px !important;}
 body.desktop-mode.sb-collapsed #main{margin-left:0 !important;}
 
@@ -269,7 +274,12 @@ body.sb-open #sb-overlay{display:block;}
 <body>
 <div id="toast-box"></div>
 <div id="sb-overlay" onclick="closeSidebar()"></div>
-<button id="sb-float-btn" onclick="toggleSidebar()" style="display:none;position:fixed;top:0;left:0;width:44px;height:44px;background:var(--orange);border:none;color:#fff;font-size:18px;cursor:pointer;z-index:200;align-items:center;justify-content:center;border-radius:0 0 8px 0;">☰</button>
+<div id="sb-toggle-btn" onclick="toggleSidebar()" style="position:fixed;top:0;left:0;width:220px;height:46px;background:var(--white);border-right:1px solid var(--border);box-shadow:2px 0 16px rgba(0,0,0,.04);z-index:101;display:flex;align-items:center;gap:10px;padding:9px 14px 9px 22px;cursor:pointer;font-size:13.5px;color:var(--txt2);font-weight:400;box-sizing:border-box;transition:width .3s;user-select:none;">
+  <span class="nav-icon" style="color:var(--txt3);">☰</span>
+  <span id="sb-toggle-label" style="white-space:nowrap;overflow:hidden;">收合選單</span>
+</div>
+
+
 
 <div id="load-ov">
   <div class="ld-title">橋見幸福民宿</div>
@@ -280,9 +290,7 @@ body.sb-open #sb-overlay{display:block;}
 
 
 <aside id="sidebar">
-  <button id="sb-toggle-btn" onclick="toggleSidebar()" style="width:100%;height:44px;border:none;border-bottom:1px solid rgba(255,255,255,.18);background:var(--orange);color:#fff;cursor:pointer;display:flex;align-items:center;padding-left:16px;gap:10px;flex-shrink:0;">
-    <span style="font-size:18px;">☰</span><span id="sb-toggle-label" style="font-size:12px;font-weight:500;opacity:.9;">收合選單</span>
-  </button>
+
   <div class="sb-logo" style="position:relative;">
     <h1><span style="width:28px;height:28px;background:var(--orange);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🏠</span>橋見幸福民宿</h1>
     <p style="margin-top:6px;padding-left:36px;">內部營運管理系統</p>
@@ -304,6 +312,7 @@ body.sb-open #sb-overlay{display:block;}
     <div class="nav-item" onclick="exportBackupJSON()" style="cursor:pointer;"><span class="nav-icon">⬇</span>備份(下載JSON)</div>
     <div class="nav-item" onclick="document.getElementById('restoreFile').click()" style="cursor:pointer;"><span class="nav-icon">⬆</span>還原JSON</div>
     <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="importBackup(event)">
+
   </div>
   <div style="padding:14px 20px;border-top:1px solid var(--border);">
     <div style="font-size:11px;color:var(--txt3);line-height:1.8;">橋見幸福民宿<br>© 2025 內部使用</div>
@@ -312,8 +321,8 @@ body.sb-open #sb-overlay{display:block;}
 
 <main id="main">
   <div class="pg-header" style="padding-left:0;">
-    <div style="display:flex;align-items:center;">
-      <h2 id="pg-title" style="padding-left:22px;">總覽儀表板</h2>
+    <div style="display:flex;align-items:center;flex:1;">
+      <h2 id="pg-title" style="padding-left:20px;">總覽儀表板</h2>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="hdr-sync-wrap" style="display:flex;align-items:center;gap:5px;"><span id="sync-dot"></span><span id="sync-label" style="font-size:11px;color:var(--txt3);"></span><span id="sync-time" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span><span class="nav-item hdr-sync-btn" onclick="checkSyncNow()" style="cursor:pointer;padding:2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;display:inline-flex;align-items:center;gap:3px;">🔄 檢查同步</span></div>
@@ -771,6 +780,9 @@ function initViewMode() {
       if(icon) icon.textContent='📱';
       if(label) label.textContent='手機版顯示';
     }
+    // 更新收合 icon
+    const isC2=localStorage.getItem('sbCollapsed')==='1';
+    updateToggleIcon(isC2);
   }, {once:true});
 }
 initViewMode();
@@ -783,6 +795,66 @@ function sv(k, data) {
   db.collection('bnb').doc(k).set({ data: JSON.parse(JSON.stringify(data)) })
     .then(() => { _pendingWrites--; if(_pendingWrites<=0){_pendingWrites=0;setSyncing(false);} })
     .catch(e => { _pendingWrites--; if(_pendingWrites<=0)_pendingWrites=0; console.error(e); setSyncError(); });
+}
+
+// ── 圖片預覽 Modal（手機用）──
+function showImgPreviewModal(dataURL, filename){
+  const existing=document.getElementById('img-preview-modal');
+  if(existing) existing.remove();
+
+  const overlay=document.createElement('div');
+  overlay.id='img-preview-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9990;display:flex;flex-direction:column;';
+
+  // 頂部列
+  const bar=document.createElement('div');
+  bar.style.cssText='background:#F26522;height:52px;display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;';
+  const backBtn=document.createElement('button');
+  backBtn.textContent='← 返回';
+  backBtn.style.cssText='background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;';
+  backBtn.onclick=()=>overlay.remove();
+  const titleEl=document.createElement('span');
+  titleEl.textContent='訂房一覽圖片';
+  titleEl.style.cssText='color:#fff;font-size:15px;font-weight:600;';
+  bar.appendChild(backBtn);bar.appendChild(titleEl);
+
+  // 圖片區
+  const scroll=document.createElement('div');
+  scroll.style.cssText='flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px;';
+  const img=document.createElement('img');
+  img.src=dataURL;
+  img.style.cssText='max-width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.4);display:block;';
+
+  // 分享按鈕
+  const shareBtn=document.createElement('button');
+  shareBtn.textContent='⬆ 分享 / 儲存圖片';
+  shareBtn.style.cssText='width:100%;max-width:400px;padding:14px;background:#F26522;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;';
+
+  const hint=document.createElement('div');
+  hint.textContent='📱 或長按圖片 → 儲存到相簿';
+  hint.style.cssText='font-size:13px;color:rgba(255,255,255,.6);text-align:center;';
+
+  shareBtn.onclick=async()=>{
+    try{
+      const res=await fetch(dataURL);
+      const blob=await res.blob();
+      const file=new File([blob],(filename||'橋見幸福訂房一覽')+'.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:'橋見幸福訂房一覽',text:'橋見幸福民宿訂房一覽表'});
+        return;
+      }
+    }catch(e){
+      if(e.name==='AbortError')return;
+    }
+    // fallback
+    const a=document.createElement('a');
+    a.href=dataURL;a.download=(filename||'橋見幸福訂房一覽')+'.png';a.click();
+    hint.textContent='⬇ 若未儲存，請長按上方圖片儲存到相簿';
+  };
+
+  scroll.appendChild(img);scroll.appendChild(shareBtn);scroll.appendChild(hint);
+  overlay.appendChild(bar);overlay.appendChild(scroll);
+  document.body.appendChild(overlay);
 }
 
 // 同步指示燈
@@ -1124,6 +1196,10 @@ function goTo(s){
   renderSec(s);
 }
 function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),history:renderHistory,finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
+function updateToggleIcon(collapsed){
+  const lbl=document.getElementById('sb-toggle-label');
+  if(lbl) lbl.textContent = collapsed ? '展開選單' : '收合選單';
+}
 function toggleSidebar(){
   const isMobile = document.body.classList.contains('mobile-mode') ||
     (!document.body.classList.contains('desktop-mode') && window.innerWidth<=768);
@@ -1134,8 +1210,7 @@ function toggleSidebar(){
     const collapsed = document.body.classList.toggle('sb-collapsed');
     if(collapsed){ localStorage.setItem('sbCollapsed','1'); }
     else { localStorage.removeItem('sbCollapsed'); }
-    const lbl=document.getElementById('sb-toggle-label');
-    if(lbl) lbl.textContent = collapsed ? '展開選單' : '收合選單';
+    updateToggleIcon(collapsed);
   }
 }
 // 保留相容性
@@ -1498,60 +1573,7 @@ function _drawBKExport(year, month){
   const dataURL=canvas.toDataURL('image/png');
   const isMobile=document.body.classList.contains('mobile-mode')||window.innerWidth<=768;
   if(isMobile){
-    // 手機：開新分頁顯示，長按圖片即可儲存
-    const win=window.open('','_blank');
-    if(win){
-      // 用 Blob URL 開新視窗，避免 document.write 破壞外層 HTML 解析
-      const blob=new Blob([dataURL],{type:'text/plain'});
-      win._imgData=dataURL;
-      win.document.open();
-      win.document.close();
-      win._imgData=dataURL;
-      // 用 srcdoc 注入，完全隔離
-      const iframe=win.document.createElement('iframe');
-      iframe.style.cssText='width:100%;height:100%;border:none;';
-      const htmlContent=[
-        'DATA:text/html,',
-        '%3C!DOCTYPE html%3E%3Chtml%3E%3Chead%3E',
-        '%3Cmeta name=viewport content=width%3Ddevice-width%2Cinitial-scale%3D1%3E',
-        '%3Ctitle%3E%E8%A8%82%E6%88%BF%E4%B8%80%E8%A6%BD%3C/title%3E',
-      ].join('');
-      // 直接操作 win 的 DOM
-      win.document.documentElement.style.cssText='margin:0;padding:0;height:100%;';
-      win.document.body.style.cssText='margin:0;background:#f5f5f5;font-family:sans-serif;padding-bottom:120px;';
-      win.document.head.innerHTML='<meta name="viewport" content="width=device-width,initial-scale=1"><title>訂房一覽</title><style>*{box-sizing:border-box;margin:0;padding:0;}.top-bar{position:fixed;top:0;left:0;right:0;height:52px;background:#F26522;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}.back-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;cursor:pointer;}.title{color:#fff;font-size:15px;font-weight:600;}.content{padding:68px 16px 16px;}img{max-width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:block;}.hint{font-size:13px;color:#888;margin-top:14px;text-align:center;line-height:1.8;padding:12px;background:#fff;border-radius:8px;}.save-btn{display:block;margin:14px auto 0;padding:14px 0;width:100%;max-width:400px;background:#F26522;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;}</style>';
-      const bar=win.document.createElement('div');
-      bar.className='top-bar';
-      bar.innerHTML='<button class="back-btn" onclick="window.close()">← 返回系統</button><span class="title">訂房一覽圖片</span>';
-      win.document.body.appendChild(bar);
-      const cont=win.document.createElement('div');
-      cont.className='content';
-      const img=win.document.createElement('img');
-      img.src=dataURL;
-      const hint=win.document.createElement('div');
-      hint.className='hint';
-      hint.textContent='📱 長按上方圖片 → 儲存到相簿';
-      const btn=win.document.createElement('button');
-      btn.className='save-btn';
-      btn.textContent='⬇ 儲存 / 分享圖片';
-      btn.onclick=async function(){
-        try{
-          const res=await fetch(dataURL);
-          const bl=await res.blob();
-          const file=new File([bl],'橋見幸福訂房一覽.png',{type:'image/png'});
-          if(navigator.canShare&&navigator.canShare({files:[file]})){
-            await navigator.share({files:[file],title:'橋見幸福訂房一覽'});
-            return;
-          }
-        }catch(e){if(e.name==='AbortError')return;}
-        const a=document.createElement('a');
-        a.href=dataURL;a.download='橋見幸福訂房一覽.png';a.click();
-        hint.textContent='若未自動儲存，請長按上方圖片儲存到相簿';
-      };
-      cont.appendChild(img);cont.appendChild(hint);cont.appendChild(btn);
-      win.document.body.appendChild(cont);
-    }
-    showToast('✅ 圖片已在新分頁開啟，長按儲存');
+    showImgPreviewModal(dataURL, ds2);
   } else {
     const link=document.createElement('a');
     link.download='橋見幸福訂房一覽_'+ds2+'.png';
