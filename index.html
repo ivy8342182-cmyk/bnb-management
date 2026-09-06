@@ -167,10 +167,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--orange);box-shadow:0 
 @media(max-width:480px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr}.gr{grid-template-columns:1fr 1fr}}
 
 /* 手機模擬模式（由 JS 套用） */
-body.mobile-mode #sidebar{transform:translateX(-100%);}
-body.mobile-mode #sidebar.open{transform:translateX(0);}
+body.mobile-mode #sidebar{transform:translateX(-100%);top:40px !important;}
+body.mobile-mode #sidebar.open{transform:translateX(0);z-index:300;top:40px !important;}
 body.mobile-mode #main{margin-left:0;padding-top:46px;}
-body.mobile-mode #sb-toggle-btn{position:fixed;left:0;right:0;top:0;padding-left:8px;}
+body.mobile-mode #sb-toggle-btn{position:fixed !important;top:0 !important;left:0 !important;width:auto !important;height:40px !important;padding:0 14px !important;border-right:1px solid var(--border) !important;border-bottom:1px solid var(--border) !important;border-radius:0 0 8px 0 !important;box-shadow:none !important;justify-content:flex-start !important;gap:6px !important;z-index:400 !important;}
+body.mobile-mode #sb-toggle-label{display:inline !important;}
 
 
 body.mobile-mode .pg-content{padding:14px}
@@ -258,7 +259,7 @@ body.mobile-mode .bk-hdr-btn{font-size:12px !important;padding:6px 10px !importa
 body.mobile-mode .hdr-sync-wrap{display:none !important;}
 body.mobile-mode .hdr-date-wrap{display:none !important;}
 
-#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99;}
+#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:160;}
 body.sb-open #sb-overlay{display:block;}
 @media(max-width:768px){
   #bk-list-wrap .card{display:none;}
@@ -772,6 +773,9 @@ function initViewMode() {
     if(mode==='mobile'){
       if(icon) icon.textContent='🖥';
       if(label) label.textContent='電腦版顯示';
+      // 手機版初始 sidebar 是關閉的
+      const sbLbl=document.getElementById('sb-toggle-label');
+      if(sbLbl) sbLbl.textContent='展開選單';
     } else {
       if(icon) icon.textContent='📱';
       if(label) label.textContent='手機版顯示';
@@ -1193,6 +1197,9 @@ function goTo(s){
 }
 function renderSec(s){({dashboard:renderDash,rooms:renderRooms,bookings:()=>renderBK(curBKF),history:renderHistory,finance:renderFin,cleaning:renderCL,guests:renderGuests,inventory:()=>renderInv(curInvF)})[s]?.()}
 function updateToggleIcon(collapsed){
+  const isMobile = document.body.classList.contains('mobile-mode') ||
+    (!document.body.classList.contains('desktop-mode') && window.innerWidth<=768);
+  if(isMobile) return; // 手機版 label 由 toggleSidebar 管理
   const lbl=document.getElementById('sb-toggle-label');
   if(lbl) lbl.textContent = collapsed ? '展開選單' : '收合選單';
 }
@@ -1202,6 +1209,8 @@ function toggleSidebar(){
   if(isMobile){
     const isOpen=$('sidebar').classList.toggle('open');
     document.body.classList.toggle('sb-open', isOpen);
+    const lbl=document.getElementById('sb-toggle-label');
+    if(lbl) lbl.textContent=isOpen?'收合選單':'展開選單';
   } else {
     const collapsed = document.body.classList.toggle('sb-collapsed');
     if(collapsed){ localStorage.setItem('sbCollapsed','1'); }
@@ -1214,6 +1223,8 @@ function toggleSB(){ toggleSidebar(); }
 function closeSidebar(){
   $('sidebar').classList.remove('open');
   document.body.classList.remove('sb-open');
+  const lbl=document.getElementById('sb-toggle-label');
+  if(lbl) lbl.textContent='展開選單';
 }
 
 // ══════════════════════════════════════════
