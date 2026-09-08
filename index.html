@@ -410,12 +410,19 @@ body.sb-open #sb-overlay{display:block;}
           <button class="btn btn-o btn-sm" onclick="calNav(1)">下個月 ›</button>
         </div>
         <!-- 手機版導覽 -->
-        <div class="cal-nav-mobile" style="display:none;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
-          <button class="btn btn-o btn-sm" onclick="mobCalNav(-1)">‹</button>
-          <span id="cal-title-mobile" style="font-weight:600;font-size:14px;flex:1;text-align:center;"></span>
-          <button class="btn btn-o btn-sm" onclick="mobCalNav(1)">›</button>
-          <button class="mob-cal-tab active" id="mob-tab-month" onclick="switchMobCalTab('month')" style="font-size:11px;padding:4px 10px;">月視圖</button>
-          <button class="mob-cal-tab" id="mob-tab-week" onclick="switchMobCalTab('week')" style="font-size:11px;padding:4px 10px;">週視圖</button>
+        <div class="cal-nav-mobile" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <!-- 第一列：年月標題 + 月視圖/週視圖切換 -->
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="cal-title-mobile" style="font-weight:600;font-size:15px;flex:1;"></span>
+            <button class="mob-cal-tab active" id="mob-tab-month" onclick="switchMobCalTab('month')" style="font-size:12px;padding:5px 12px;">月視圖</button>
+            <button class="mob-cal-tab" id="mob-tab-week" onclick="switchMobCalTab('week')" style="font-size:12px;padding:5px 12px;">週視圖</button>
+          </div>
+          <!-- 第二列：週切換（只有週視圖時顯示）-->
+          <div id="mob-week-nav" style="display:none;align-items:center;justify-content:space-between;">
+            <button class="btn btn-o btn-sm" onclick="mobCalNav(-1)">‹ 上一週</button>
+            <span id="mob-week-range" style="font-size:13px;color:var(--txt3);"></span>
+            <button class="btn btn-o btn-sm" onclick="mobCalNav(1)">下一週 ›</button>
+          </div>
         </div>
         <!-- 電腦版大表格 -->
         <div class="card cal-nav-desktop" style="padding:0;overflow:hidden;">
@@ -1254,7 +1261,7 @@ function renderDash(){
   const ciL=$('d-ci-list');
   ciL.innerHTML=ci.length?ci.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${b.g}人</div></div>${b.st==='confirmed'?`<button class="btn btn-g btn-sm" onclick="checkIn('${b._uid||b.id}')">辦理入住</button>`:'<span class="tag b-ok">已入住</span>'}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無入住</div>';
   const coL=$('d-co-list');
-  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">辦理退房</button></div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
+  coL.innerHTML=co.length?co.map(b=>{const r=rooms.find(x=>x.id===b.rid);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);"><div><div style="font-weight:500;">${b.nm}</div><div style="font-size:12px;color:var(--txt3);">${r?r.name:''} · ${fmtM(b.amt)}</div></div><button class="btn btn-o btn-sm" onclick="checkOut('${b._uid||b.id}')">辦理退房</button>${isBackToBack(b)?'<span style="font-size:10px;background:#E74C3C;color:#fff;padding:2px 6px;border-radius:8px;margin-left:5px;font-weight:600;">🚨 立即清潔</span>':''}</div>`}).join(''):'<div style="color:var(--txt3);text-align:center;padding:20px;font-size:13px;">今日無退房</div>';
   // 計數徽章
   const ciBadge=$('d-ci-badge'); if(ciBadge) ciBadge.textContent=ci.length?ci.length+'筆':'';
   const coBadge=$('d-co-badge'); if(coBadge) coBadge.textContent=co.length?co.length+'筆':'';
@@ -1400,7 +1407,7 @@ function _drawBKExport(year, month){
   const TITLE_H=64;
   const SEC_H=36; // 區塊標題
   const LIST_ROW_H=38;
-  const LIST_COLS=[80,140,150,110,110,80,100];
+  const LIST_COLS=[80,160,100,160,100,70,80];
   const LIST_LABELS=['房間','客人','入住','退房','狀態','人數','金額'];
   const FOOT_H=32;
   const TOTAL_H=TITLE_H+8+CAL_H+16+SEC_H+LIST_ROW_H+(listBks.length||1)*LIST_ROW_H+FOOT_H+PAD;
@@ -1482,14 +1489,35 @@ function _drawBKExport(year, month){
       const rc=getRoomColor(b.rid);
       const barColor=b.st==='checkedout'?'#95A5A6':rc;
       const isStart=b.ci===ds;
+      const nextBk=getBackToBackForRoom(b.rid, b.co);
+      const isLastDay=addD(b.co,-1)===ds; // 今天是這組最後一晚
+      // 今天是否為下一組的入住日（由上一組帶來的換人日）
+      const prevBk=monthBks.find(pb=>pb.rid===b.rid&&addD(pb.co,-1)===addD(ds,-1)&&pb.id!==b.id);
+
       ctx.fillStyle=barColor+'33';
       ctx.fillRect(cx+1,bkY,CELL_W-2,16);
+
+      // 連續訂房最後一晚：右側紅線 + 下一組客人名字
+      if(isLastDay&&nextBk){
+        ctx.fillStyle='#E74C3C';
+        ctx.fillRect(cx+CELL_W-3,bkY,3,16);
+        ctx.font='bold 8px sans-serif';
+        ctx.textAlign='right';
+        ctx.fillText('→'+(nextBk.nm||''),cx+CELL_W-4,bkY+11);
+        ctx.textAlign='left';
+      }
+
       if(isStart){
         ctx.fillStyle=barColor;
         ctx.fillRect(cx+1,bkY,3,16);
         ctx.fillStyle=barColor;
         ctx.font=(b.st==='checkedin'?'bold ':'')+'9px sans-serif';
-        ctx.fillText((b.st==='checkedin'?'★':'')+' '+(b.rnm||'').slice(0,4),cx+6,bkY+11);
+        // 連續入住：顯示「前客→本客」
+        const prevB2B=monthBks.find(pb=>pb.rid===b.rid&&pb.co===b.ci&&pb.id!==b.id);
+        const label=prevB2B
+          ?'↺'+(b.nm||'')
+          :(b.st==='checkedin'?'★':'')+' '+(b.rnm||b.nm||'').slice(0,4);
+        ctx.fillText(label,cx+6,bkY+11);
       }
       bkY+=18;
     });
@@ -1548,7 +1576,13 @@ function _drawBKExport(year, month){
       ctx.fillRect(PAD,y,3,LIST_ROW_H);
       const stmap={confirmed:'已確認',checkedin:'★已入住',checkedout:'已退房',cancelled:'已取消'};
       const stcolor={confirmed:'#185FA5',checkedin:ORANGE,checkedout:'#95A5A6',cancelled:'#E74C3C'};
-      const vals=[r?r.name:'—', b.nm||'—', b.ci.slice(5), b.co.slice(5), stmap[b.st]||b.st, (b.g||'—')+'人', '$'+(b.amt||0)];
+      const b2b=getBackToBackForRoom(b.rid,b.co);
+      const prevB2B=listBks.find(pb=>pb.rid===b.rid&&pb.co===b.ci&&pb.id!==b.id);
+      let coLabel=b.co.slice(5);
+      if(b2b) coLabel+=' →'+(b2b.nm||'');
+      let nmLabel=b.nm||'—';
+      if(prevB2B) nmLabel='↺ '+nmLabel;
+      const vals=[r?r.name:'—', nmLabel, b.ci.slice(5), coLabel, stmap[b.st]||b.st, (b.g||'—')+'人', '$'+(b.amt||0)];
       lx=PAD+8;
       vals.forEach((v,i)=>{
         if(i===4){
@@ -1557,11 +1591,17 @@ function _drawBKExport(year, month){
         } else if(i===0){
           ctx.fillStyle=rc;
           ctx.font='bold 12px sans-serif';
+        } else if(i===3&&b2b){
+          ctx.fillStyle='#E74C3C';
+          ctx.font='bold 12px sans-serif';
+        } else if(i===1&&prevB2B){
+          ctx.fillStyle='#E74C3C';
+          ctx.font='bold 12px sans-serif';
         } else {
           ctx.fillStyle='#2C2C2A';
           ctx.font='12px sans-serif';
         }
-        ctx.fillText(v, lx, y+24);
+        ctx.fillText(v, lx, y+24, LIST_COLS[i]-6);
         lx+=LIST_COLS[i];
       });
       y+=LIST_ROW_H;
@@ -1574,6 +1614,8 @@ function _drawBKExport(year, month){
   ctx.fillStyle='#AAA';
   ctx.font='11px sans-serif';
   ctx.fillText('橋見幸福民宿內部系統自動產生', PAD, y+20);
+  ctx.fillStyle='#E74C3C';
+  ctx.fillText('↺ = 連續訂房，需立即清潔', PAD+260, y+20);
 
   // ── 下載 / 顯示 ──
   const ds2=String(year)+(month+1<10?'0':'')+(month+1);
@@ -1649,7 +1691,7 @@ function renderBK(f){
   }
   tb.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
-    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span></td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b._uid||b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b._uid||b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b._uid||b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" style="margin-right:3px;" onclick="cancelBK('${b._uid||b.id}')">取消</button>`:''}<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b._uid||b.id}','${(b.nm||'').replace(/'/g,'')}')">刪除</button></td></tr>`;
+    return`<tr><td><code style="font-size:12px;">${b.id}</code></td><td><strong>${r?r.name:'—'}</strong></td><td>${b.nm}<br><span style="font-size:12px;color:var(--txt3);">${b.ph}</span></td><td>${fmtDF(b.ci)}</td><td>${fmtDF(b.co)}<br><span style="font-size:12px;color:var(--txt3);">${n}晚</span></td><td>${b.g}人</td><td style="font-family:'Noto Sans TC',sans-serif;font-size:16px;">${fmtM(b.amt)}<br><span style="font-size:12px;font-family:'Noto Sans TC',sans-serif;color:var(--txt3);">訂金:${fmtM(b.dep)}</span></td><td><span class="tag" style="background:${sc.bg};color:${sc.c};">${BSLBL[b.st]||b.st}</span>${(()=>{const nb=getBackToBackForRoom(b.rid,b.co);const pb=ld(K.bk).find(p=>p.rid===b.rid&&p.co===b.ci&&p.id!==b.id);return (nb?'<span style="font-size:10px;background:#E74C3C;color:#fff;padding:1px 6px;border-radius:8px;margin-left:3px;">→'+(nb.nm||'')+'</span>':'')+(pb?'<span style="font-size:10px;background:#9B59B6;color:#fff;padding:1px 6px;border-radius:8px;margin-left:2px;">↺'+(pb.nm||'')+'退</span>':'');})()}</td><td style="white-space:nowrap;">${b.st==='confirmed'?`<button class="btn btn-g btn-sm" style="margin-right:3px;" onclick="checkIn('${b._uid||b.id}')">入住</button>`:''}${b.st==='checkedin'?`<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="checkOut('${b._uid||b.id}')">退房</button>`:''}<button class="btn btn-o btn-sm" style="margin-right:3px;" onclick="openEditBK('${b._uid||b.id}')">編輯</button>${(b.st==='confirmed'||b.st==='checkedin')?`<button class="btn btn-d btn-sm" style="margin-right:3px;" onclick="cancelBK('${b._uid||b.id}')">取消</button>`:''}<button class="btn btn-sm" style="background:#fff;border:1px solid #ddd;color:#666;" onclick="deleteBK('${b._uid||b.id}','${(b.nm||'').replace(/'/g,'')}')">刪除</button></td></tr>`;
   }).join('');
   if(cards)cards.innerHTML=data.map(b=>{
     const r=rooms.find(x=>x.id===b.rid),n=nights(b.ci,b.co),sc=BSCLR[b.st]||{};
@@ -1664,7 +1706,7 @@ function renderBK(f){
     return`<div class="bk-card">
       <div class="bk-card-top">
         <div>
-          <div class="bk-card-name">${b.nm||'—'}</div>
+          <div class="bk-card-name" style="display:flex;align-items:center;gap:6px;">${b.nm||'—'}${(()=>{const nb=getBackToBackForRoom(b.rid,b.co);const pb=ld(K.bk).find(p=>p.rid===b.rid&&p.co===b.ci&&p.id!==b.id);return (nb?'<span style="font-size:10px;background:#E74C3C;color:#fff;padding:1px 6px;border-radius:8px;margin-left:3px;">→'+(nb.nm||'')+'</span>':'')+(pb?'<span style="font-size:10px;background:#9B59B6;color:#fff;padding:1px 6px;border-radius:8px;margin-left:2px;">↺'+(pb.nm||'')+'退</span>':'');})()}</div>
           <div class="bk-card-room">🏠 ${r?r.name:'—'}&nbsp;&nbsp;${b.ph||''}</div>
         </div>
         <span class="tag" style="background:${sc.bg};color:${sc.c};flex-shrink:0;">${BSLBL[b.st]||b.st}</span>
@@ -1731,6 +1773,17 @@ function cancelBK(uid){
   if(!confirm('確認取消此訂房？'))return;
   const bks=ld(K.bk),b=bks.find(x=>(x._uid||x.id)===uid);
   if(b){ b.st='cancelled'; sv(K.bk,bks); removeClTask(b.id); showToast('✅ 訂房已取消，清潔任務已移除'); }
+}
+
+// ══════════════════════════════════════════
+// 連續訂房偵測
+// ══════════════════════════════════════════
+function getBackToBackForRoom(rid, coDate){
+  const bks=ld(K.bk).filter(b=>b.st!=='cancelled'&&b.st!=='checkedout');
+  return bks.find(b=>b.rid===rid&&b.ci===coDate);
+}
+function isBackToBack(b){
+  return !!getBackToBackForRoom(b.rid, b.co);
 }
 
 // ══════════════════════════════════════════
@@ -1833,7 +1886,7 @@ function renderHistory(){
     return`<div class="bk-card">
       <div class="bk-card-top">
         <div>
-          <div class="bk-card-name">${b.nm||'—'}</div>
+          <div class="bk-card-name" style="display:flex;align-items:center;gap:6px;">${b.nm||'—'}${(()=>{const nb=getBackToBackForRoom(b.rid,b.co);const pb=ld(K.bk).find(p=>p.rid===b.rid&&p.co===b.ci&&p.id!==b.id);return (nb?'<span style="font-size:10px;background:#E74C3C;color:#fff;padding:1px 6px;border-radius:8px;margin-left:3px;">→'+(nb.nm||'')+'</span>':'')+(pb?'<span style="font-size:10px;background:#9B59B6;color:#fff;padding:1px 6px;border-radius:8px;margin-left:2px;">↺'+(pb.nm||'')+'退</span>':'');})()}</div>
           <div class="bk-card-room">🏠 ${r?r.name:'—'}&nbsp;&nbsp;${b.ph||''}</div>
         </div>
         <span class="tag" style="background:${sc.bg};color:${sc.c};flex-shrink:0;">${BSLBL[b.st]||b.st}</span>
@@ -2220,6 +2273,8 @@ function switchMobCalTab(tab){
   document.getElementById('mob-tab-week').classList.toggle('active',tab==='week');
   document.getElementById('mob-cal-month-wrap').style.display=tab==='month'?'':'none';
   document.getElementById('mob-cal-week-wrap').style.display=tab==='week'?'':'none';
+  const weekNav=document.getElementById('mob-week-nav');
+  if(weekNav) weekNav.style.display=tab==='week'?'flex':'none';
   renderCalMobile();
 }
 
@@ -2239,13 +2294,15 @@ function mobCalNav(dir){
 
 function updateMobCalTitle(){
   const el=document.getElementById('cal-title-mobile');
-  if(!el)return;
+  const wr=document.getElementById('mob-week-range');
   if(mobCalTab==='month'){
-    el.textContent=mobCalYear+'年 '+(mobCalMonth+1)+'月';
+    if(el) el.textContent=mobCalYear+'年 '+(mobCalMonth+1)+'月';
+    if(wr) wr.textContent='';
   } else {
+    if(el) el.textContent=mobCalYear+'年 '+(mobCalMonth+1)+'月';
     const end=new Date(mobCalWeekStart);end.setDate(end.getDate()+6);
     const fmt=d=>(d.getMonth()+1)+'/'+(d.getDate());
-    el.textContent=fmt(mobCalWeekStart)+' — '+fmt(end);
+    if(wr) wr.textContent=fmt(mobCalWeekStart)+' — '+fmt(end);
   }
 }
 
@@ -2321,7 +2378,8 @@ function renderMobMonth(){
         ${isCi?`<span style="position:absolute;top:-6px;right:-4px;font-size:7px;color:${c};font-weight:900;line-height:1;">★</span>`:''}
       </div>`;
     }).join('');
-    html+=`<td onclick="mobCalClickDay('${ds}')" style="${isToday?'background:#FFF3EC;':''}">
+    const cellB2B=dayBks.some(b=>getBackToBackForRoom(b.rid,b.co)&&addD(b.co,-1)===ds);
+    html+=`<td onclick="mobCalClickDay('${ds}')" style="${isToday?'background:#FFF3EC;':''}${cellB2B?'outline:1.5px solid #E74C3C;outline-offset:-1px;':''}">
       <div class="${isToday?'mob-cal-today':''}" style="text-align:center;">
         <span class="mob-cal-day-num" style="color:${isToday?'':numColor};">${d}</span>
       </div>
@@ -2392,7 +2450,7 @@ function renderMobWeek(){
           <div class="cal-day-bk-room" style="color:${sc};">${r?r.name:'—'}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:13px;">${b.nm||'—'}</div>
-            <div style="font-size:11px;color:var(--txt3);">入住 ${b.ci.slice(5)} &nbsp;退房 ${b.co.slice(5)}</div>
+            <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px;">入住 ${b.ci.slice(5)} 退房 ${b.co.slice(5)}${isBackToBack(b)?'<span style="background:#E74C3C;color:#fff;font-size:10px;padding:1px 5px;border-radius:6px;">🚨</span>':''}</div>
           </div>
         </div>`;
       }).join('')}</div>`:`<div class="cal-day-empty">空房</div>`}
